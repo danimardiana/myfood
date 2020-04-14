@@ -1,0 +1,9 @@
+MainPackage=C:\Users\mgand\source\repos\myfood-app\myfoodapp\bin\ARM\Release\myfoodapp_1.0.66.0_ARM.msix
+ResourcePack=C:\Users\mgand\source\repos\myfood-app\myfoodapp\bin\ARM\Release\myfoodapp_1.0.66.0_language-fr.msix
+ResourcePack=C:\Users\mgand\source\repos\myfood-app\myfoodapp\bin\ARM\Release\myfoodapp_1.0.66.0_scale-100.msix
+ResourcePack=C:\Users\mgand\source\repos\myfood-app\myfoodapp\bin\ARM\Release\myfoodapp_1.0.66.0_scale-125.msix
+ResourcePack=C:\Users\mgand\source\repos\myfood-app\myfoodapp\bin\ARM\Release\myfoodapp_1.0.66.0_scale-140.msix
+ResourcePack=C:\Users\mgand\source\repos\myfood-app\myfoodapp\bin\ARM\Release\myfoodapp_1.0.66.0_scale-150.msix
+ResourcePack=C:\Users\mgand\source\repos\myfood-app\myfoodapp\bin\ARM\Release\myfoodapp_1.0.66.0_scale-180.msix
+ResourcePack=C:\Users\mgand\source\repos\myfood-app\myfoodapp\bin\ARM\Release\myfoodapp_1.0.66.0_scale-240.msix
+ResourcePack=C:\Users\mgand\source\repos\myfood-app\myfoodapp\bin\ARM\Release\myfoodapp_1.0.66.0_scale-400.msix
