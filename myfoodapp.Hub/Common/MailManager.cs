@@ -1,4 +1,4 @@
-﻿    using myfoodapp.Hub.Models;
+﻿using myfoodapp.Hub.Models;
 using Newtonsoft.Json;
 using SendGrid;
 using SendGrid.Helpers.Mail;
@@ -41,10 +41,25 @@ namespace myfoodapp.Hub.Common
                 MailTemplateObject obj = new MailTemplateObject();
                 var currentTemplate = string.Empty;
 
+                if (currentProductionUnit.owner == null || currentProductionUnit.owner.contactMail == null || currentProductionUnit.owner.contactMail == string.Empty)
+                {
+                    dbLog.Logs.Add(Log.CreateLog(String.Format("Error with Mail Notification - Mail is missing for {0}", currentProductionUnit.info), Log.LogType.Information));
+                    dbLog.SaveChanges();
+
+                    return;
+                }
+
                 var pioneerName = string.Format("{0} #{1}", currentProductionUnit.owner.pioneerCitizenName, currentProductionUnit.owner.pioneerCitizenNumber);
 
                 obj.firstName = currentProductionUnit.owner.pioneerCitizenName;
                 obj.pioneerNumber = currentProductionUnit.owner.pioneerCitizenNumber.ToString();
+
+                if (currentProductionUnit.productionUnitType.name.ToString().Contains("Family"))
+                    obj.isFamily = true;
+                else if (currentProductionUnit.productionUnitType.name.ToString().Contains("City"))
+                    obj.isFamily = false;
+                else
+                    obj.isFamily = true;
 
                 List<EmailAddress> tos = new List<EmailAddress>
                 {
@@ -101,10 +116,25 @@ namespace myfoodapp.Hub.Common
                 MailTemplateObject obj = new MailTemplateObject();
                 var currentTemplate = string.Empty;
 
+                if (currentProductionUnit.owner == null || currentProductionUnit.owner.contactMail == null || currentProductionUnit.owner.contactMail == string.Empty)
+                {
+                    dbLog.Logs.Add(Log.CreateLog(String.Format("Error with Mail Notification - Mail is missing for {0}", currentProductionUnit.info), Log.LogType.Information));
+                    dbLog.SaveChanges();
+
+                    return;
+                }
+
                 var pioneerName = string.Format("{0} #{1}", currentProductionUnit.owner.pioneerCitizenName, currentProductionUnit.owner.pioneerCitizenNumber);
 
                 obj.firstName = currentProductionUnit.owner.pioneerCitizenName;
                 obj.pioneerNumber = currentProductionUnit.owner.pioneerCitizenNumber.ToString();
+
+                if (currentProductionUnit.productionUnitType.name.ToString().Contains("Family"))
+                    obj.isFamily = true;
+                else if (currentProductionUnit.productionUnitType.name.ToString().Contains("City"))
+                    obj.isFamily = false;
+                else
+                    obj.isFamily = true;
 
                 List<EmailAddress> tos = new List<EmailAddress>
                 {
@@ -231,7 +261,17 @@ namespace myfoodapp.Hub.Common
                 obj.firstName = currentProductionUnit.owner.pioneerCitizenName;
                 obj.pioneerNumber = currentProductionUnit.owner.pioneerCitizenNumber.ToString();
 
+                if (currentProductionUnit.productionUnitType.name.ToString().Contains("Family"))
+                    obj.isFamily = true;
+                else
+                    obj.isFamily = false;
+
                 obj.recommandations = reco.OrderBy(r => r.order).ToList();
+
+                if (obj.recommandations.Count > 0)
+                    obj.hasRecommandation = true;
+                else
+                    obj.hasRecommandation = false;
 
                 List<EmailAddress> tos = new List<EmailAddress>
                 {
@@ -265,7 +305,7 @@ namespace myfoodapp.Hub.Common
                 }
 
                 var msg = MailHelper.CreateSingleTemplateEmailToMultipleRecipients(from, tos, currentTemplate, obj);
-                msg.AddCc("agro@myfood.eu");
+                //msg.AddCc("agro@myfood.eu");
                 var response = client.SendEmailAsync(msg);
             }
             catch (Exception ex)
@@ -332,12 +372,17 @@ namespace myfoodapp.Hub.Common
         [JsonProperty("pioneerNumber")]
         public string pioneerNumber;
 
+        [JsonProperty("isFamily")]
+        public bool isFamily;
+
         [JsonProperty("callbackurl")]
         public string callbackurl;
 
+        [JsonProperty("hasRecommandation")]
+        public bool hasRecommandation;
+
         [JsonProperty("recommandations")]
         public List<RecommandationTemplaceObject> recommandations;
-
     }
 
     public class RecommandationTemplaceObject

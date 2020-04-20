@@ -18,7 +18,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Web;
 using System.Web.Mvc;
@@ -809,71 +808,61 @@ namespace myfoodapp.Hub.Controllers
             var db = new ApplicationDbContext();
             var dbLog = new ApplicationDbContext();
 
-            var upRunningStatus = db.ProductionUnitStatus.Where(p => p.Id == 3).FirstOrDefault();
-
-            var upRunningProductionUnits = db.ProductionUnits.Include(p => p.productionUnitStatus)
-                                                             .Where(p => p.productionUnitStatus.Id == upRunningStatus.Id).ToList();
-
-            dbLog.Logs.Add(Log.CreateLog(String.Format("Rules Processing starts @{0} for {1} Production Units", DateTime.Now, upRunningProductionUnits.Count), Log.LogType.Information));
-            dbLog.SaveChanges();
-
-            upRunningProductionUnits.ForEach(p =>
-            {
-                dbLog.Logs.Add(Log.CreateLog(String.Format("Measures Processing for {0}", p.info), Log.LogType.Information));
-                dbLog.SaveChanges();
-
-                var currentMeasures = AquaponicsRulesManager.MeasuresProcessor(p.Id);
-
-                dbLog.Logs.Add(Log.CreateLog(String.Format("Measures Validating for {0}", p.info), Log.LogType.Information));
-                dbLog.SaveChanges();
-
-                try
-                {
-                    var reco = AquaponicsRulesManager.ValidateRules(currentMeasures, p.Id);
-
-                    if (reco.Count() > 0)
-                        MailManager.PioneerUnitWeeklyMessage(p, reco);
-                }
-                catch (Exception ex)
-                {
-                    dbLog.Logs.Add(Log.CreateErrorLog(String.Format("Error with Rule Manager Evaluator"), ex));
-                    dbLog.SaveChanges();
-                }
-
-                dbLog.Logs.Add(Log.CreateLog(String.Format("Rules Validation ended for {0}", p.info), Log.LogType.Information));
-                dbLog.SaveChanges();
-            });
-
             //var db = new ApplicationDbContext();
 
-            //var currentProductionUnit = db.ProductionUnits.Include(p => p.owner.user)
-            //                                                  .Include(p => p.owner.language)
-            //                                                  .Include(p => p.hydroponicType)
-            //                                                  .Include(p => p.productionUnitStatus)
-            //                                                  .Include(p => p.productionUnitType)
-            //                                                  .Where(p => p.reference == "C087EF" || p.reference == "74711").FirstOrDefault();
+            var pr = db.ProductionUnits.Include(p => p.owner.user)
+                                                              .Include(p => p.owner.language)
+                                                              .Include(p => p.hydroponicType)
+                                                              .Include(p => p.productionUnitStatus)
+                                                              .Include(p => p.productionUnitType)
+                                                              .Where(p => p.reference == "C087EF" || p.reference == "74711").FirstOrDefault();
 
-            ////if (currentProductionUnit.owner.contactMail != null && currentProductionUnit.owner.isMailNotificationActivated == true)
-            ////{
-            //    //MailManager.PioneerUnitOnlineMessage(currentProductionUnit);
-            //    //MailManager.PioneerUnitOfflineMessage(currentProductionUnit);
+            var currentMeasures = AquaponicsRulesManager.MeasuresProcessor(pr.Id);
 
-            //    var currentMeasures = AquaponicsRulesManager.MeasuresProcessor(currentProductionUnit.Id);
+            try
+            {
+                var reco = AquaponicsRulesManager.ValidateRules(currentMeasures, pr.Id);
+                MailManager.PioneerUnitWeeklyMessage(pr, reco);
+            }
+            catch (Exception ex)
+            {
+                dbLog.Logs.Add(Log.CreateErrorLog(String.Format("Error with Rule Manager Evaluator"), ex));
+                dbLog.SaveChanges();
+            }
+
+            //var upRunningStatus = db.ProductionUnitStatus.Where(s => s.Id == 3).FirstOrDefault();
+            //var offlineStatus = db.ProductionUnitStatus.Where(s => s.Id == 6).FirstOrDefault();
+
+            //var productionUnits = db.ProductionUnits.Where(p => p.productionUnitStatus.Id == upRunningStatus.Id || p.productionUnitStatus.Id == offlineStatus.Id)
+            //                                                 .Include(p => p.productionUnitStatus)
+            //                                                 .Include(p => p.productionUnitType)
+            //                                                 .Include(p => p.owner.user)
+            //                                                 .Include(p => p.owner.language)
+            //                                                 .Include(p => p.hydroponicType)
+            //                                                 .Include(p => p.productionUnitStatus)
+            //                                                 .Include(p => p.productionUnitType).ToList();
+
+            //dbLog.Logs.Add(Log.CreateLog(String.Format("Rules Processing starts @{0} for {1} Production Units", DateTime.Now, productionUnits.Count), Log.LogType.Information));
+            //dbLog.SaveChanges();
+
+            //productionUnits.ForEach(p =>
+            //{
+            //    var currentMeasures = AquaponicsRulesManager.MeasuresProcessor(p.Id);
 
             //    try
             //    {
-            //        var reco = AquaponicsRulesManager.ValidateRules(currentMeasures, currentProductionUnit.Id);
-
-            //        if(reco.Count() > 0)
-            //            MailManager.PioneerUnitWeeklyMessage(currentProductionUnit, reco);
+            //        var reco = AquaponicsRulesManager.ValidateRules(currentMeasures, p.Id);
+            //        MailManager.PioneerUnitWeeklyMessage(p, reco);
             //    }
             //    catch (Exception ex)
             //    {
-            //        db.Logs.Add(Log.CreateErrorLog(String.Format("Error with Rule Manager Evaluator"), ex));
-            //        db.SaveChanges();
+            //        dbLog.Logs.Add(Log.CreateErrorLog(String.Format("Error with Rule Manager Evaluator"), ex));
+            //        dbLog.SaveChanges();
             //    }
+            //});
 
-            // }
+            //dbLog.Logs.Add(Log.CreateLog(String.Format("Rules Processing ended @{0} for {1} Production Units", DateTime.Now, productionUnits.Count), Log.LogType.Information));
+            //dbLog.SaveChanges();
 
             //var upRunningStatus = db.ProductionUnitStatus.Where(s => s.Id == 3).FirstOrDefault();
             //var upRunningProductionUnits = db.ProductionUnits.Include(p => p.owner.language).Where(p => p.productionUnitStatus.Id == upRunningStatus.Id).ToList();
