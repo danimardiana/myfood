@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2020-04-20 13:59+02:00\n"
-"PO-Revision-Date: 2020-04-20 13:59+02:00\n"
+"POT-Creation-Date: 2020-06-01 12:00+02:00\n"
+"PO-Revision-Date: 2020-06-01 12:00+02:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -1073,11 +1073,6 @@ msgstr "Créé par"
 #: obj\Release\Package\PackageTmp\Views\Recipes\Index.cshtml:74
 msgid "crop per slot"
 msgstr "graine par emplacement"
-
-#: Views\Recipes\Index.cshtml:70
-#: obj\Release\Package\PackageTmp\Views\Recipes\Index.cshtml:70
-msgid "crops per slot"
-msgstr "graines par emplacement"
 
 #: Business\GrowingModel.cs:40
 #: Content\GrowingModelv1.json:1531
@@ -4230,6 +4225,11 @@ msgstr "Planter les semis"
 msgid "Plants"
 msgstr "Plantes"
 
+#: Views\Recipes\Index.cshtml:70
+#: obj\Release\Package\PackageTmp\Views\Recipes\Index.cshtml:70
+msgid "plants per slot"
+msgstr "plants par emplacement"
+
 #: Views\Account\ForgotPasswordConfirmation.cshtml:644
 #: obj\Release\Package\PackageTmp\Views\Account\ForgotPasswordConfirmation.cshtml:644
 msgid "Please check your email to reset your password."
@@ -6267,6 +6267,9 @@ msgstr "Courgette"
 
 #~ msgid "createdBy"
 #~ msgstr "créé par"
+
+#~ msgid "crops per slot"
+#~ msgstr "graines par emplacement"
 
 #~ msgid "Daily Events on your myfood Unit {0}"
 #~ msgstr "Evénements du Jour de votre Unité myfood"

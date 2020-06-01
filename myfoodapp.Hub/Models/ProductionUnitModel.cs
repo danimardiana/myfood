@@ -59,6 +59,7 @@ namespace myfoodapp.Hub.Models
         public PreferedMoment preferedMoment { get; set; }
         public string notificationPushKey { get; set; }
         public bool? isMailNotificationActivated { get; set; }
+        public bool? hasFahrenheitSetting { get; set; }
     }
 
     public class ProductionUnitType

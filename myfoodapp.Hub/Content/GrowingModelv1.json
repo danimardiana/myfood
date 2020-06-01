@@ -2869,7 +2869,7 @@
                   "number": 2,
                   "vegetable": {
                     "name": "[[[Water Melon]]]",
-                    "imagePath": "water-melon.jpg",
+                    "imagePath": "watermelon.jpg",
                     "cropPerSlot": 1,
                     "growingState": {
                       "name": "[[[Harvest]]]",
@@ -3590,7 +3590,7 @@
                   "number": 2,
                   "vegetable": {
                     "name": "[[[Water Melon]]]",
-                    "imagePath": "water-melon.jpg",
+                    "imagePath": "watermelon.jpg",
                     "cropPerSlot": 1,
                     "growingState": {
                       "name": "[[[Harvest]]]",
@@ -4311,7 +4311,7 @@
                   "number": 2,
                   "vegetable": {
                     "name": "[[[Water Melon]]]",
-                    "imagePath": "water-melon.jpg",
+                    "imagePath": "watermelon.jpg",
                     "cropPerSlot": 1,
                     "growingState": {
                       "name": "[[[Harvest]]]",
@@ -5032,7 +5032,7 @@
                   "number": 2,
                   "vegetable": {
                     "name": "[[[Water Melon]]]",
-                    "imagePath": "water-melon.jpg",
+                    "imagePath": "watermelon.jpg",
                     "cropPerSlot": 1,
                     "growingState": {
                       "name": "[[[Harvest]]]",
@@ -5753,7 +5753,7 @@
                   "number": 2,
                   "vegetable": {
                     "name": "[[[Water Melon]]]",
-                    "imagePath": "water-melon.jpg",
+                    "imagePath": "watermelon.jpg",
                     "cropPerSlot": 1,
                     "growingState": {
                       "name": "[[[Harvest]]]",
@@ -6474,7 +6474,7 @@
                   "number": 2,
                   "vegetable": {
                     "name": "[[[Water Melon]]]",
-                    "imagePath": "water-melon.jpg",
+                    "imagePath": "watermelon.jpg",
                     "cropPerSlot": 1,
                     "growingState": {
                       "name": "[[[Harvest]]]",

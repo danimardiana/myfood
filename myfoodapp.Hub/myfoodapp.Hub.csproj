@@ -451,6 +451,10 @@
     <Compile Include="Migrations\201907072105295_Add-Last-Signal-Strenght.Designer.cs">
       <DependentUpon>201907072105295_Add-Last-Signal-Strenght.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\202006010959483_Add-Fahrenheit-Support.cs" />
+    <Compile Include="Migrations\202006010959483_Add-Fahrenheit-Support.Designer.cs">
+      <DependentUpon>202006010959483_Add-Fahrenheit-Support.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Migrations\UpgradeDatabase.cs" />
     <Compile Include="Models\AccountBindingModels.cs" />
@@ -2402,6 +2406,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\201907072105295_Add-Last-Signal-Strenght.resx">
       <DependentUpon>201907072105295_Add-Last-Signal-Strenght.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202006010959483_Add-Fahrenheit-Support.resx">
+      <DependentUpon>202006010959483_Add-Fahrenheit-Support.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

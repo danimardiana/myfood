@@ -238,7 +238,10 @@ namespace myfoodapp.Hub.Common
 
         public static void PioneerUnitWeeklyMessage(ProductionUnit currentProductionUnit, List<RecommandationTemplaceObject> reco)
         {
+            var db = new ApplicationDbContext();
             var dbLog = new ApplicationDbContext();
+
+            var infoEventType = db.EventTypes.Where(p => p.Id == 8).FirstOrDefault();
 
             try
             {
@@ -271,7 +274,15 @@ namespace myfoodapp.Hub.Common
                 if (obj.recommandations.Count > 0)
                     obj.hasRecommandation = true;
                 else
+                {
                     obj.hasRecommandation = false;
+
+                    //var content = String.Format("",null);
+
+                    //db.Events.Add(new Event() { date = DateTime.Now, description = content, isOpen = false, productionUnit = currentProductionUnit, eventType = infoEventType, createdBy = "MyFood Bot" });
+                    //db.SaveChanges();
+                }
+                    
 
                 List<EmailAddress> tos = new List<EmailAddress>
                 {

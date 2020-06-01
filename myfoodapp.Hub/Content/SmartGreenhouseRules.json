@@ -48,7 +48,7 @@
     "bindingPropertyValue": "lastWeekPHVariation"
   },
   {
-    "ruleEvaluator": "(threeLastDayPHVariation != 0) && (threeLastDayPHVariation > 0.6)",
+    "ruleEvaluator": "(fiveLastDayPHVariation != 0) && (fiveLastDayPHVariation > 0.6)",
     "impactLevel": 2,
     "title": "Oscillation of the acidity of the water. Probable presence of algae (var. av. {0})",
     "titleFR": "Oscillation de l'acidité de l'eau. Présence probable d'algues (var. moy. {0})",
@@ -57,7 +57,7 @@
     "descriptionFR": "Pour ralentir le développement des algues, utilisez la lampe UV et recouvrez en partie les bassins.",
     "descriptionDE": "Um das Algenwachstum zu verlangsamen, verwenden Sie die UV-Lampe und decken die Teiche teilweise ab.",
     "url": "https://wiki.myfood.eu/docs/lutter-contre-les-algues",
-    "bindingPropertyValue": "threeLastDayPHVariation"
+    "bindingPropertyValue": "fiveLastDayPHVariation"
   },
   {
     "ruleEvaluator": "(lastWeekAveragePHValue != 0) && (lastWeekAveragePHValue >= 7.5) && (lastWeekAveragePHValue <= 8.4)",
@@ -129,7 +129,7 @@
     "descriptionFR": "Veillez aux développements de champignons sur les espaces de culture. Nettoyez les surfaces impactées avec du vinaigre blanc.",
     "descriptionDE": "Achten Sie auf das Pilzwachstum in den Anbaugebieten. Reinigen Sie die betroffenen Flächen mit weißem Essig.",
     "url": "https://wiki.myfood.eu/docs/adaptation-hivernale",
-    "bindingPropertyValue": "humidityValue"
+    "bindingPropertyValue": "lastWeekAverageAirTempValue"
   },
   {
     "ruleEvaluator": "(hydroponicTypeName = 'Aquaponics - Carp') && (lastWeekMinWaterTempValue <= 3)",

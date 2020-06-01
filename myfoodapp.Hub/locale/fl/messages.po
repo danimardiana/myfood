@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2020-04-20 14:15+02:00\n"
-"PO-Revision-Date: 2020-04-20 14:15+02:00\n"
+"POT-Creation-Date: 2020-06-01 16:52+02:00\n"
+"PO-Revision-Date: 2020-06-01 16:52+02:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -1072,11 +1072,6 @@ msgstr ""
 #: Views\Recipes\Index.cshtml:74
 #: obj\Release\Package\PackageTmp\Views\Recipes\Index.cshtml:74
 msgid "crop per slot"
-msgstr ""
-
-#: Views\Recipes\Index.cshtml:70
-#: obj\Release\Package\PackageTmp\Views\Recipes\Index.cshtml:70
-msgid "crops per slot"
 msgstr ""
 
 #: Business\GrowingModel.cs:40
@@ -4230,6 +4225,11 @@ msgstr ""
 msgid "Plants"
 msgstr ""
 
+#: Views\Recipes\Index.cshtml:70
+#: obj\Release\Package\PackageTmp\Views\Recipes\Index.cshtml:70
+msgid "plants per slot"
+msgstr ""
+
 #: Views\Account\ForgotPasswordConfirmation.cshtml:644
 #: obj\Release\Package\PackageTmp\Views\Account\ForgotPasswordConfirmation.cshtml:644
 msgid "Please check your email to reset your password."
@@ -6284,6 +6284,9 @@ msgstr ""
 #~ msgstr ""
 
 #~ msgid "createdBy"
+#~ msgstr ""
+
+#~ msgid "crops per slot"
 #~ msgstr ""
 
 #~ msgid "Daily Events on your myfood Unit {0}"

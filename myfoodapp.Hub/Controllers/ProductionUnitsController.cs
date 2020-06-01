@@ -810,59 +810,59 @@ namespace myfoodapp.Hub.Controllers
 
             //var db = new ApplicationDbContext();
 
-            var pr = db.ProductionUnits.Include(p => p.owner.user)
-                                                              .Include(p => p.owner.language)
-                                                              .Include(p => p.hydroponicType)
-                                                              .Include(p => p.productionUnitStatus)
-                                                              .Include(p => p.productionUnitType)
-                                                              .Where(p => p.reference == "C087EF" || p.reference == "74711").FirstOrDefault();
+            //var pr = db.ProductionUnits.Include(p => p.owner.user)
+            //                                                  .Include(p => p.owner.language)
+            //                                                  .Include(p => p.hydroponicType)
+            //                                                  .Include(p => p.productionUnitStatus)
+            //                                                  .Include(p => p.productionUnitType)
+            //                                                  .Where(p => p.reference == "C087EF" || p.reference == "74711").FirstOrDefault();
 
-            var currentMeasures = AquaponicsRulesManager.MeasuresProcessor(pr.Id);
+            //var currentMeasures = AquaponicsRulesManager.MeasuresProcessor(pr.Id);
 
-            try
-            {
-                var reco = AquaponicsRulesManager.ValidateRules(currentMeasures, pr.Id);
-                MailManager.PioneerUnitWeeklyMessage(pr, reco);
-            }
-            catch (Exception ex)
-            {
-                dbLog.Logs.Add(Log.CreateErrorLog(String.Format("Error with Rule Manager Evaluator"), ex));
-                dbLog.SaveChanges();
-            }
-
-            //var upRunningStatus = db.ProductionUnitStatus.Where(s => s.Id == 3).FirstOrDefault();
-            //var offlineStatus = db.ProductionUnitStatus.Where(s => s.Id == 6).FirstOrDefault();
-
-            //var productionUnits = db.ProductionUnits.Where(p => p.productionUnitStatus.Id == upRunningStatus.Id || p.productionUnitStatus.Id == offlineStatus.Id)
-            //                                                 .Include(p => p.productionUnitStatus)
-            //                                                 .Include(p => p.productionUnitType)
-            //                                                 .Include(p => p.owner.user)
-            //                                                 .Include(p => p.owner.language)
-            //                                                 .Include(p => p.hydroponicType)
-            //                                                 .Include(p => p.productionUnitStatus)
-            //                                                 .Include(p => p.productionUnitType).ToList();
-
-            //dbLog.Logs.Add(Log.CreateLog(String.Format("Rules Processing starts @{0} for {1} Production Units", DateTime.Now, productionUnits.Count), Log.LogType.Information));
-            //dbLog.SaveChanges();
-
-            //productionUnits.ForEach(p =>
+            //try
             //{
-            //    var currentMeasures = AquaponicsRulesManager.MeasuresProcessor(p.Id);
+            //    var reco = AquaponicsRulesManager.ValidateRules(currentMeasures, pr.Id);
+            //    MailManager.PioneerUnitWeeklyMessage(pr, reco);
+            //}
+            //catch (Exception ex)
+            //{
+            //    dbLog.Logs.Add(Log.CreateErrorLog(String.Format("Error with Rule Manager Evaluator"), ex));
+            //    dbLog.SaveChanges();
+            //}
 
-            //    try
-            //    {
-            //        var reco = AquaponicsRulesManager.ValidateRules(currentMeasures, p.Id);
-            //        MailManager.PioneerUnitWeeklyMessage(p, reco);
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        dbLog.Logs.Add(Log.CreateErrorLog(String.Format("Error with Rule Manager Evaluator"), ex));
-            //        dbLog.SaveChanges();
-            //    }
-            //});
+            var upRunningStatus = db.ProductionUnitStatus.Where(s => s.Id == 3).FirstOrDefault();
+            var offlineStatus = db.ProductionUnitStatus.Where(s => s.Id == 6).FirstOrDefault();
 
-            //dbLog.Logs.Add(Log.CreateLog(String.Format("Rules Processing ended @{0} for {1} Production Units", DateTime.Now, productionUnits.Count), Log.LogType.Information));
-            //dbLog.SaveChanges();
+            var productionUnits = db.ProductionUnits.Where(p => p.productionUnitStatus.Id == upRunningStatus.Id || p.productionUnitStatus.Id == offlineStatus.Id)
+                                                             .Include(p => p.productionUnitStatus)
+                                                             .Include(p => p.productionUnitType)
+                                                             .Include(p => p.owner.user)
+                                                             .Include(p => p.owner.language)
+                                                             .Include(p => p.hydroponicType)
+                                                             .Include(p => p.productionUnitStatus)
+                                                             .Include(p => p.productionUnitType).ToList();
+
+            dbLog.Logs.Add(Log.CreateLog(String.Format("Rules Processing starts @{0} for {1} Production Units", DateTime.Now, productionUnits.Count), Log.LogType.Information));
+            dbLog.SaveChanges();
+
+            productionUnits.ForEach(p =>
+            {
+                var currentMeasures = AquaponicsRulesManager.MeasuresProcessor(p.Id);
+
+                try
+                {
+                    var reco = AquaponicsRulesManager.ValidateRules(currentMeasures, p.Id);
+                    MailManager.PioneerUnitWeeklyMessage(p, reco);
+                }
+                catch (Exception ex)
+                {
+                    dbLog.Logs.Add(Log.CreateErrorLog(String.Format("Error with Rule Manager Evaluator"), ex));
+                    dbLog.SaveChanges();
+                }
+            });
+
+            dbLog.Logs.Add(Log.CreateLog(String.Format("Rules Processing ended @{0} for {1} Production Units", DateTime.Now, productionUnits.Count), Log.LogType.Information));
+            dbLog.SaveChanges();
 
             //var upRunningStatus = db.ProductionUnitStatus.Where(s => s.Id == 3).FirstOrDefault();
             //var upRunningProductionUnits = db.ProductionUnits.Include(p => p.owner.language).Where(p => p.productionUnitStatus.Id == upRunningStatus.Id).ToList();

@@ -151,6 +151,8 @@ namespace myfoodapp.Hub.Business
             DateTime lastDay = thisDay.AddDays(-1);
             DateTime twoDaysAgo = thisDay.AddDays(-2);
             DateTime threeDaysAgo = thisDay.AddDays(-3);
+            DateTime fourDaysAgo = thisDay.AddDays(-4);
+            DateTime fiveDaysAgo = thisDay.AddDays(-5);
             DateTime aWeekAgo = thisDay.AddDays(-7);
 
             GroupedMeasure currentMeasures = new GroupedMeasure();
@@ -182,6 +184,22 @@ namespace myfoodapp.Hub.Business
                                    m.productionUnit.Id == currentProductionUnit.Id &&
                                    m.sensor.Id == phSensor.Id).OrderBy(m => m.Id).Min(t => (decimal?)t.value)).GetValueOrDefault();
 
+                var currentFourDaysMaxPHValue = ((decimal?)db.Measures.Where(m => m.captureDate > fourDaysAgo && m.captureDate < threeDaysAgo &&
+                                   m.productionUnit.Id == currentProductionUnit.Id &&
+                                   m.sensor.Id == phSensor.Id).OrderBy(m => m.Id).Max(t => (decimal?)t.value)).GetValueOrDefault();
+
+                var currentFourDaysMinPHValue = ((decimal?)db.Measures.Where(m => m.captureDate > fourDaysAgo && m.captureDate < threeDaysAgo &&
+                                   m.productionUnit.Id == currentProductionUnit.Id &&
+                                   m.sensor.Id == phSensor.Id).OrderBy(m => m.Id).Min(t => (decimal?)t.value)).GetValueOrDefault();
+
+                var currentFiveDaysMaxPHValue = ((decimal?)db.Measures.Where(m => m.captureDate > fiveDaysAgo && m.captureDate < fourDaysAgo &&
+                                   m.productionUnit.Id == currentProductionUnit.Id &&
+                                   m.sensor.Id == phSensor.Id).OrderBy(m => m.Id).Max(t => (decimal?)t.value)).GetValueOrDefault();
+
+                var currentFiveDaysMinPHValue = ((decimal?)db.Measures.Where(m => m.captureDate > fiveDaysAgo && m.captureDate < fourDaysAgo &&
+                                   m.productionUnit.Id == currentProductionUnit.Id &&
+                                   m.sensor.Id == phSensor.Id).OrderBy(m => m.Id).Min(t => (decimal?)t.value)).GetValueOrDefault();
+
                 var currentLastWeekMaxPHValue = ((decimal?)db.Measures.Where(m => m.captureDate > aWeekAgo &&
                                    m.productionUnit.Id == currentProductionUnit.Id &&
                                    m.sensor.Id == phSensor.Id).OrderBy(m => m.Id).Max(t => (decimal?)t.value)).GetValueOrDefault();
@@ -198,8 +216,8 @@ namespace myfoodapp.Hub.Business
                                    m.productionUnit.Id == currentProductionUnit.Id &&
                                    m.sensor.Id == phSensor.Id).OrderBy(m => m.Id).Min(t => (DateTime?)t.captureDate)).GetValueOrDefault();
 
-                currentMeasures.lastWeekMaxPHValue = currentLastDayMaxPHValue;
-                currentMeasures.lastWeekMinPHValue = currentLastDayMinPHValue;
+                currentMeasures.lastWeekMaxPHValue = currentLastWeekMaxPHValue;
+                currentMeasures.lastWeekMinPHValue = currentLastWeekMinPHValue;
 
                 if (currentLastWeekMinPHDate < currentLastWeekMaxPHDate)
                     currentMeasures.lastWeekPHRise = true;
@@ -216,7 +234,7 @@ namespace myfoodapp.Hub.Business
                                    m.sensor.Id == phSensor.Id).OrderBy(m => m.Id).Average(t => t.value)).GetValueOrDefault();
 
                 currentMeasures.lastWeekPHVariation = Math.Round(Math.Abs(currentLastWeekMaxPHValue - currentLastWeekMinPHValue), 1);
-                currentMeasures.threeLastDayPHVariation = Math.Round((Math.Abs(currentLastDayMaxPHValue - currentLastDayMinPHValue) + Math.Abs(currentTwoDaysMaxPHValue - currentTwoDaysMinPHValue) + Math.Abs(currentThreeDaysMaxPHValue - currentThreeDaysMinPHValue)) / 3, 1);
+                currentMeasures.fiveLastDayPHVariation = Math.Round((Math.Abs(currentLastDayMaxPHValue - currentLastDayMinPHValue) + Math.Abs(currentTwoDaysMaxPHValue - currentTwoDaysMinPHValue) + Math.Abs(currentThreeDaysMaxPHValue - currentThreeDaysMinPHValue) + Math.Abs(currentFourDaysMaxPHValue - currentFourDaysMinPHValue) + Math.Abs(currentFiveDaysMaxPHValue - currentFiveDaysMinPHValue)) / 5, 1);
                 currentMeasures.lastWeekAveragePHValue = Math.Round(currentLastWeekAveragePHValue, 1);
 
                 var currentLastWeekMaxAirTempValue = ((decimal?)db.Measures.Where(m => m.captureDate > aWeekAgo &&
@@ -291,7 +309,7 @@ namespace myfoodapp.Hub.Business
         public decimal? lastWeekPHVariation { get; set; } = 0;
         public bool? lastWeekPHRise { get; set; } = false;
         public bool? lastWeekPHFall { get; set; } = false;
-        public decimal? threeLastDayPHVariation { get; set; } = 0;
+        public decimal? fiveLastDayPHVariation { get; set; } = 0;
         public decimal? lastWeekAveragePHValue { get; set; } = 0;
         public decimal? waterTempValue { get; set; } = 0;
         public decimal? lastWeekMinWaterTempValue { get; set; } = 0;
