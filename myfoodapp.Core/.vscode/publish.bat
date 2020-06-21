@@ -1,0 +1,1 @@
+bash /mnt/c/Users/mgand/source/repos/myfood/myfoodapp.Core/.vscode/publish.sh

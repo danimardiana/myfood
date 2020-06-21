@@ -1,0 +1,78 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/myfoodapp.Core.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "publish",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "publish",
+                "${workspaceFolder}/myfoodapp.Core.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "watch",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "watch",
+                "run",
+                "${workspaceFolder}/myfoodapp.Core.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "RaspberryPublishWSL",
+            "command": "sh",
+            "type": "shell",
+            "dependsOn": "build",
+            "windows": {
+                "command": "cmd",
+                "args": [
+                    "/c",
+                    "\"dotnet publish -v m -r linux-arm -o bin\\linux-arm\\publish\""
+                ],
+                "problemMatcher": []
+            }
+            
+        },
+        {
+            "label": "RaspberryDeployWSLBat",
+            "type": "shell",
+            "dependsOn": "RaspberryPublishWSL",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "windows": {
+                "command": "${cwd}\\.vscode\\publish.bat"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "echo",
+            "type": "shell",
+            "command": "echo 'sshpass -p \"raspberry\" rsync -rvuz ...'"
+        }
+    ]
+}

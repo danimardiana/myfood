@@ -1,9 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
-using System;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace myfoodapp.Model.Migrations
+namespace myfoodapp.Core.Migrations
 {
-    public partial class FirstMigration : Migration
+    public partial class InitialCreate : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -13,9 +13,9 @@ namespace myfoodapp.Model.Migrations
                 {
                     Id = table.Column<int>(nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
+                    name = table.Column<string>(nullable: true),
                     description = table.Column<string>(nullable: true),
-                    lastCalibration = table.Column<DateTime>(nullable: true),
-                    name = table.Column<string>(nullable: true)
+                    lastCalibration = table.Column<DateTime>(nullable: true)
                 },
                 constraints: table =>
                 {
@@ -29,8 +29,8 @@ namespace myfoodapp.Model.Migrations
                     Id = table.Column<long>(nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     captureDate = table.Column<DateTime>(nullable: false),
-                    sensorId = table.Column<int>(nullable: true),
-                    value = table.Column<decimal>(nullable: false)
+                    value = table.Column<decimal>(nullable: false),
+                    sensorId = table.Column<int>(nullable: true)
                 },
                 constraints: table =>
                 {
