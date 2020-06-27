@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.IO.Ports;
 using myfoodapp.Core.Model;
+using myfoodapp.Core.Common;
 
 namespace myfoodapp.Core.Business
 {
@@ -14,12 +15,11 @@ namespace myfoodapp.Core.Business
     {
         public SerialPort currentSerialPort;
         public SensorTypeEnum sensorType;
-
     }
 
     public sealed class AtlasSensorManager
     {
-        //private LogModel logModel = LogModel.GetInstance;
+        private LogManager lg = LogManager.GetInstance;
         private List<AtlasSensor> sensorsList = new List<AtlasSensor>();
 
         public bool isInitialized = false;
@@ -30,8 +30,6 @@ namespace myfoodapp.Core.Business
             Low,
             High
         }
-
-        private CancellationTokenSource ReadCancellationTokenSource;
 
         private static AtlasSensorManager instance;
 
@@ -48,7 +46,7 @@ namespace myfoodapp.Core.Business
         }
 
         //pH Sensors Commands
-        //private string queryCalibrationCommand = "Cal,?\r";
+        private string queryCalibrationCommand = "Cal,?\r";
         private string clearCalibrationCommand = "Cal,clear\r";
         private string midCalibrationCommand = "Cal,mid,7.00\r";
         private string lowCalibrationCommand = "Cal,low,4.00\r";
@@ -64,20 +62,32 @@ namespace myfoodapp.Core.Business
         private string resetFactoryCommand = "Factory\r";
         private string ledDebugCommand = "L,{0}\r";
         private string getStatusCommand = "Status\r";
-        //private string sleepModeCommand = "Sleep\r";
+        private string sleepModeCommand = "Sleep\r";
         private string readValueCommand = "R\r";
         private string setWaterTemperatureCommand = "T,{0}\r";
-        //private string wakeupCommand = "W\r";
+        private string wakeupCommand = "W\r";
+        private string getContinuousModeStatus = "C,?\r";
         private string disableContinuousModeCommand = "C,0\r";
-        private string disableAutomaticAnswerCommand = "RESPONSE,0\r";
-
-        //private string answersWrongCommand = "*ER";
-        //private string answersOverVoltedCircuit = "*OV";
-        //private string answersUnderVoltedCircuit = "*UV";
-        //private string answersResetCircuit = "*RS";
-        //private string answersBootUpCircuit = "*RE";
+        private string answersContinuousModeOn = "?C,1";
+        private string getAutomaticAnswerStatusv1 = "RESPONSE,?\r";
+        private string disableAutomaticAnswerCommandv1 = "RESPONSE,0\r";
+        private string enableAutomaticAnswerCommandv1 = "RESPONSE,1\r";  
+        private string answersAutomaticAnswerOnv1 = "?RESPONSE,1\r";    
+        private string getAutomaticAnswerStatusv2 = "OK,?\r";
+        private string disableAutomaticAnswerCommandv2 = "OK,0\r";
+        private string enableAutomaticAnswerCommandv2 = "OK,1\r";
+        private string answersAutomaticAnswerOnv2 = "?OK,1\r";
+        private string answersWrongCommand = "*ER";
+        private string answersOverVoltedCircuit = "*OV";
+        private string answersUnderVoltedCircuit = "*UV";
+        private string answersResetCircuit = "*RS";
+        private string answersBootUpCircuit = "*RE";
         private string answersSleepMode = "*SL";
         private string answersWakeUpMode = "*WA";
+
+        string s = String.Empty;
+        string r = String.Empty;
+        string strResult = String.Empty;
 
         private AtlasSensorManager()
         {
@@ -94,7 +104,7 @@ namespace myfoodapp.Core.Business
             {
                 string[] ports = SerialPort.GetPortNames();
 
-                //logModel.AppendLog(Log.CreateLog(String.Format("Sensors found in {0} sec.", watch.ElapsedMilliseconds / 1000), Log.LogType.System));
+                lg.AppendLog(Log.CreateLog(String.Format("Sensors found in {0} sec.", watch.ElapsedMilliseconds / 1000), LogType.System));
 
                 for (int i = 0; i < ports.Count(); i++)
                 {
@@ -102,11 +112,9 @@ namespace myfoodapp.Core.Business
                     {
                         if (ports[i].Contains("ttyUSB"))
                         {
-                            // var task = Task.Run(async () =>
-                            // {
                                 try
                                 {
-                                    //logModel.AppendLog(Log.CreateLog(String.Format("Associating device ID - {0}", entry.Id), Log.LogType.System));
+                                    lg.AppendLog(Log.CreateLog(String.Format("Associating device ID - {0}", ports[i]), LogType.System));
 
                                     var serialPort = new SerialPort(ports[i]);
 
@@ -116,20 +124,110 @@ namespace myfoodapp.Core.Business
                                     serialPort.StopBits = StopBits.One;
                                     serialPort.DataBits = 8;
                                     serialPort.Handshake = Handshake.None;
-                                    serialPort.ReadTimeout = 5000;
-                                    serialPort.WriteTimeout = 5000;
+                                    serialPort.ReadTimeout = 6000;
+                                    serialPort.WriteTimeout = 6000;
 
-                                    // Create cancellation token object to close I/O operations when closing the device
-                                    ReadCancellationTokenSource = new CancellationTokenSource();
+                                    serialPort.Open();     
 
-                                    serialPort.DataReceived += SerialPortDataReceived;
-                                    serialPort.Open();
+                                    serialPort.WriteLine(informationCommand);
+                                   
+                                    var tsk = Task.Run(async () =>
+                                     {
+                                          await Task.Delay(1000);
+                                     });
+                                     tsk.Wait();
 
+                                    r = serialPort.ReadExisting();
+
+                                    Console.WriteLine(r);
+
+                                    serialPort.WriteLine(getStatusCommand);
+
+                                    tsk = Task.Run(async () =>
+                                     {
+                                          await Task.Delay(1000);
+                                     });
+                                    tsk.Wait();
+
+                                    s = serialPort.ReadExisting();
+                                    Console.WriteLine(s);
+
+                                    serialPort.WriteLine(getContinuousModeStatus);
+
+                                    tsk = Task.Run(async () =>
+                                     {
+                                          await Task.Delay(1000);
+                                     });
+                                    tsk.Wait();
+
+                                    strResult = serialPort.ReadExisting();
+                                    Console.WriteLine(strResult);
+
+                                    if(strResult.Contains(answersContinuousModeOn))
+                                    {
+                                        serialPort.WriteLine(disableContinuousModeCommand);
+
+                                        tsk = Task.Run(async () =>
+                                        {
+                                            await Task.Delay(1000);
+                                        });
+                                        tsk.Wait();
+
+                                        strResult = serialPort.ReadExisting();
+                                        Console.WriteLine(strResult);
+                                    }
+
+                                    serialPort.WriteLine(getAutomaticAnswerStatusv1);
+
+                                    tsk = Task.Run(async () =>
+                                     {
+                                          await Task.Delay(1000);
+                                     });
+                                    tsk.Wait();
+
+                                    strResult = serialPort.ReadExisting();
+                                    Console.WriteLine(strResult);
+
+                                    if(strResult.Contains(answersAutomaticAnswerOnv1))
+                                    {
+                                        serialPort.WriteLine(disableAutomaticAnswerCommandv1);
+
+                                        tsk = Task.Run(async () =>
+                                        {
+                                            await Task.Delay(1000);
+                                        });
+                                        tsk.Wait();
+
+                                        strResult = serialPort.ReadExisting();
+                                        Console.WriteLine(strResult);
+                                    }
+
+                                    serialPort.WriteLine(getAutomaticAnswerStatusv2);
+
+                                    tsk = Task.Run(async () =>
+                                     {
+                                          await Task.Delay(1000);
+                                     });
+                                    tsk.Wait();
+
+                                    strResult = serialPort.ReadExisting();
+                                    Console.WriteLine(strResult);
+
+                                    if(strResult.Contains(answersAutomaticAnswerOnv2))
+                                    {
+                                        serialPort.WriteLine(disableAutomaticAnswerCommandv2);
+
+                                        tsk = Task.Run(async () =>
+                                        {
+                                            await Task.Delay(1000);
+                                        });
+                                        tsk.Wait();
+
+                                        strResult = serialPort.ReadExisting();
+                                        Console.WriteLine(strResult);
+                                    }
+                                    
                                     var newSensor = new AtlasSensor() { currentSerialPort = serialPort };
-
-                                    string s = String.Empty;
-                                    string r = String.Empty;
-                                    string strResult = String.Empty;
 
                                     //var taskWakeUp = Task.Run(async () =>
                                     //{
@@ -141,49 +239,6 @@ namespace myfoodapp.Core.Business
 
                                     //taskWakeUp.Wait(20000);
 
-                                    // var taskContinuous = Task.Run(async () =>
-                                    // {
-                                    //     await WriteAsync(disableContinuousModeCommand, newSensor);
-                                    //     await Task.Delay(5000);
-                                    // });
-                                    // taskContinuous.Wait();
-
-                                    // var taskStatus = Task.Run(async () =>
-                                    // {
-                                    //     await WriteAsync(getStatusCommand, newSensor)
-                                    //          .ContinueWith((are) => s = ReadAsync(ReadCancellationTokenSource.Token, newSensor).Result);
-                                    // });
-                                    // taskStatus.Wait();
-
-                                    serialPort.Write(informationCommand);
-                                
-                                    r = String.Empty;
-
-                                    while(r == String.Empty)
-                                    {
-                                        if(serialPort.BytesToRead > 0)
-                                        {
-                                            r = serialPort.ReadExisting();
-                                        }
-                                    }
-
-                                    // var taskInformation = Task.Run(async () =>
-                                    // {
-                                    //     await WriteAsync(informationCommand, newSensor)
-                                    //          .ContinueWith((are) => r = ReadAsync(ReadCancellationTokenSource.Token, newSensor).Result);
-                                    // });
-                                    // taskInformation.Wait();
-
-                                    // if (r.Contains("*OK"))
-                                    // {
-                                    //     var taskAuto = Task.Run(async () =>
-                                    //     {
-                                    //         await WriteAsync(disableAutomaticAnswerCommand, newSensor);
-                                    //         await Task.Delay(5000);
-                                    //     });
-                                    //     taskAuto.Wait();
-                                    // }
-
                                     //if (isSleepModeActivated)
                                     //{
                                     //    var taskSleep = Task.Run(async () =>
@@ -194,41 +249,41 @@ namespace myfoodapp.Core.Business
                                     //    taskSleep.Wait();
                                     //}
 
-                                    //logModel.AppendLog(Log.CreateLog(String.Format("Sensor Information - {0}", r), Log.LogType.System));
+                                    lg.AppendLog(Log.CreateLog(String.Format("Sensor Information - {0}", r), LogType.System));
 
                                     if (r.ToUpper().Contains("RTD"))
                                     {
                                         newSensor.sensorType = SensorTypeEnum.waterTemperature;
-                                        //logModel.AppendLog(Log.CreateLog("Water Temperature online", Log.LogType.Information));
-                                        //logModel.AppendLog(Log.CreateLog(String.Format("Water Temperature status - {0}", s), Log.LogType.System));
+                                        lg.AppendLog(Log.CreateLog("Water Temperature online", LogType.Information));
+                                        lg.AppendLog(Log.CreateLog(String.Format("Water Temperature status - {0}", s), LogType.System));
                                     }
 
                                     if (r.ToUpper().Contains("PH"))
                                     {
                                         newSensor.sensorType = SensorTypeEnum.pH;
-                                        //logModel.AppendLog(Log.CreateLog("PH online", Log.LogType.Information));
-                                        //logModel.AppendLog(Log.CreateLog(String.Format("PH status - {0}", s), Log.LogType.System));
+                                        lg.AppendLog(Log.CreateLog("PH online", LogType.Information));
+                                        lg.AppendLog(Log.CreateLog(String.Format("PH status - {0}", s), LogType.System));
                                     }
 
                                     if (r.ToUpper().Contains("ORP"))
                                     {
                                         newSensor.sensorType = SensorTypeEnum.ORP;
-                                        //logModel.AppendLog(Log.CreateLog("ORP online", Log.LogType.Information));
-                                        //logModel.AppendLog(Log.CreateLog(String.Format("ORP status - {0}", s), Log.LogType.System));
+                                        lg.AppendLog(Log.CreateLog("ORP online", LogType.Information));
+                                        lg.AppendLog(Log.CreateLog(String.Format("ORP status - {0}", s), LogType.System));
                                     }
 
                                     if (r.ToUpper().Contains("DO"))
                                     {
                                         newSensor.sensorType = SensorTypeEnum.dissolvedOxygen;
-                                        //logModel.AppendLog(Log.CreateLog("Dissolved Oxygen online", Log.LogType.Information));
-                                        //logModel.AppendLog(Log.CreateLog(String.Format("Dissolved Oxygen status - {0}", s), Log.LogType.System));
+                                        lg.AppendLog(Log.CreateLog("Dissolved Oxygen online", LogType.Information));
+                                        lg.AppendLog(Log.CreateLog(String.Format("Dissolved Oxygen status - {0}", s), LogType.System));
                                     }
 
                                     if (r.ToUpper().Contains("EC"))
                                     {
                                         newSensor.sensorType = SensorTypeEnum.EC;
-                                        //logModel.AppendLog(Log.CreateLog("Electro-Conductivity online", Log.LogType.Information));
-                                        //logModel.AppendLog(Log.CreateLog(String.Format("Electro-Conductivity - {0}", s), Log.LogType.System));
+                                        lg.AppendLog(Log.CreateLog("Electro-Conductivity online", LogType.Information));
+                                        lg.AppendLog(Log.CreateLog(String.Format("Electro-Conductivity - {0}", s), LogType.System));
                                     }
 
                                     sensorsList.Add(newSensor);
@@ -237,30 +292,27 @@ namespace myfoodapp.Core.Business
                                 catch (AggregateException ex)
                                 {
                                     Console.WriteLine(ex.ToString());
-                                    //logModel.AppendLog(Log.CreateErrorLog("Exception on Sensors Init", ex));
+                                    lg.AppendLog(Log.CreateErrorLog("Exception on Sensors Init", ex));
                                 }
-                            // });
-
-                            // task.Wait();
                         }
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex.ToString());
-                        //logModel.AppendLog(Log.CreateErrorLog("Exception on Sensors Init", ex));
+                        lg.AppendLog(Log.CreateErrorLog("Exception on Sensors Init", ex));
                     }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
-                //logModel.AppendLog(Log.CreateErrorLog("Exception on Sensors Init", ex));
+                lg.AppendLog(Log.CreateErrorLog("Exception on Sensors Init", ex));
             }
             finally
             {
                 isInitialized = true;
 
-                //logModel.AppendLog(Log.CreateLog(String.Format("Atlas Sensors online in {0} sec.", watch.ElapsedMilliseconds / 1000), Log.LogType.System));
+                lg.AppendLog(Log.CreateLog(String.Format("Atlas Sensors online in {0} sec.", watch.ElapsedMilliseconds / 1000), LogType.System));
                 watch.Stop();
             }
         }
@@ -303,11 +355,11 @@ namespace myfoodapp.Core.Business
             {
                 string strResult = String.Empty;
 
-                var taskCal = Task.Run(async () => {
-                    await WriteAsync(calibrationCommand, currentSensor);
-                });
+                // var taskCal = Task.Run(async () => {
+                //     await WriteAsync(calibrationCommand, currentSensor);
+                // });
 
-                taskCal.Wait();
+                // taskCal.Wait();
             }
         }
 
@@ -322,11 +374,11 @@ namespace myfoodapp.Core.Business
             {
                 string strQuery = String.Format(setCalibrationCommand, calibrationValue);
 
-                var taskCal = Task.Run(async () => {
-                    await WriteAsync(strQuery, currentSensor);
-                });
+                // var taskCal = Task.Run(async () => {
+                //     await WriteAsync(strQuery, currentSensor);
+                // });
 
-                taskCal.Wait();
+                // taskCal.Wait();
             }
         }
 
@@ -341,11 +393,11 @@ namespace myfoodapp.Core.Business
             {
                 string strResult = String.Empty;
 
-                var taskCal = Task.Run(async () => {
-                    await WriteAsync(clearCalibrationCommand, currentSensor);
-                });
+                // var taskCal = Task.Run(async () => {
+                //     await WriteAsync(clearCalibrationCommand, currentSensor);
+                // });
 
-                taskCal.Wait();
+                // taskCal.Wait();
             }
         }
 
@@ -361,11 +413,11 @@ namespace myfoodapp.Core.Business
 
                 string strResult = String.Empty;
 
-                var taskDebugMode = Task.Run(async () => {
-                    await WriteAsync(String.Format(ledDebugCommand, strIsEnable), currentSensor);
-                });
+                // var taskDebugMode = Task.Run(async () => {
+                //     await WriteAsync(String.Format(ledDebugCommand, strIsEnable), currentSensor);
+                // });
 
-                taskDebugMode.Wait();
+                // taskDebugMode.Wait();
             }
         }
 
@@ -378,24 +430,24 @@ namespace myfoodapp.Core.Business
             {
                 string strResult = String.Empty;
 
-                var taskReset = Task.Run(async () => {
-                    await WriteAsync(String.Format(resetFactoryCommand), currentSensor);
-                    await Task.Delay(5000);
-                });
+                // var taskReset = Task.Run(async () => {
+                //     await WriteAsync(String.Format(resetFactoryCommand), currentSensor);
+                //     await Task.Delay(5000);
+                // });
 
-                taskReset.Wait();
+                // taskReset.Wait();
 
-                var taskAuto = Task.Run(async () =>
-                {
-                    await WriteAsync(disableAutomaticAnswerCommand, currentSensor);
-                    await Task.Delay(5000);
-                });
-                taskAuto.Wait();
+                // var taskAuto = Task.Run(async () =>
+                // {
+                //     await WriteAsync(disableAutomaticAnswerCommand, currentSensor);
+                //     await Task.Delay(5000);
+                // });
+                // taskAuto.Wait();
 
                 var taskContinuous = Task.Run(async () =>
                 {
-                    await WriteAsync(disableContinuousModeCommand, currentSensor);
-                    await Task.Delay(5000);
+                    // await WriteAsync(disableContinuousModeCommand, currentSensor);
+                    // await Task.Delay(5000);
                 });
                 taskContinuous.Wait();
 
@@ -415,17 +467,16 @@ namespace myfoodapp.Core.Business
 
                 //taskWakeUp.Wait();
 
-                var taskSetTemp = Task.Run(async () =>
-                {
-                    await WriteAsync(String.Format(setWaterTemperatureCommand, waterTemperature), phSensor);
+                // var taskSetTemp = Task.Run(async () =>
+                // {
+                //     await WriteAsync(String.Format(setWaterTemperatureCommand, waterTemperature), phSensor);
 
-                });
+                // });
 
-                taskSetTemp.Wait();
+                // taskSetTemp.Wait();
 
                 return true;
             }
-
             return false;
         }
 
@@ -450,17 +501,17 @@ namespace myfoodapp.Core.Business
                 //    taskWakeUp.Wait();
                 //}
 
-                var taskMeasure = Task.Run(async () => {
-                    await WriteAsync(readValueCommand, currentSensor)
-                         .ContinueWith((a) => strResult = ReadAsync(ReadCancellationTokenSource.Token, currentSensor).Result);
+                // var taskMeasure = Task.Run(async () => {
+                //     await WriteAsync(readValueCommand, currentSensor)
+                //          .ContinueWith((a) => strResult = ReadAsync(ReadCancellationTokenSource.Token, currentSensor).Result);
 
-                    var boolMeasure = Decimal.TryParse(strResult.Replace("\r", "")
-                                                                .Replace(answersSleepMode, "")
-                                                                .Replace(answersWakeUpMode, "")
-                                                                , out capturedMesure);
-                });
+                //     var boolMeasure = Decimal.TryParse(strResult.Replace("\r", "")
+                //                                                 .Replace(answersSleepMode, "")
+                //                                                 .Replace(answersWakeUpMode, "")
+                //                                                 , out capturedMesure);
+                // });
 
-                taskMeasure.Wait();
+                // taskMeasure.Wait();
 
                 //if (isSleepModeActivated)
                 //{
@@ -498,7 +549,6 @@ namespace myfoodapp.Core.Business
                 //    taskWakeUp.Wait();
                 //}
 
-                //phSensor.currentSerialPort.DataReceived += SerialPortDataReceived;
                 phSensor.currentSerialPort.Write(readValueCommand);
 
                 for (int i = 0; i < 4; i++)
@@ -540,17 +590,6 @@ namespace myfoodapp.Core.Business
             return 0;
         }
 
-        private void SerialPortDataReceived(object sender, SerialDataReceivedEventArgs e)
-        {
-            var serialPort = (SerialPort)sender;
-        
-            // Read the data that's in the serial buffer.
-            var serialdata = serialPort.ReadExisting();
-        
-            // Write to debug output.
-            Console.WriteLine(serialdata);
-        }
-
         public string GetSensorStatus(SensorTypeEnum sensorType, bool isSleepModeActivated)
         {
             var currentSensor = this.GetSensor(sensorType);
@@ -571,13 +610,13 @@ namespace myfoodapp.Core.Business
                 //    taskWakeUp.Wait();
                 //}
 
-                var taskStatus = Task.Run(async () => {
-                    await WriteAsync(getStatusCommand, currentSensor)
-                         .ContinueWith((a) => strResult = ReadAsync(ReadCancellationTokenSource.Token, currentSensor).Result);
+                // var taskStatus = Task.Run(async () => {
+                //     await WriteAsync(getStatusCommand, currentSensor)
+                //          .ContinueWith((a) => strResult = ReadAsync(ReadCancellationTokenSource.Token, currentSensor).Result);
 
-                });
+                // });
 
-                taskStatus.Wait();
+                // taskStatus.Wait();
 
                 //if (isSleepModeActivated)
                 //{
@@ -595,20 +634,21 @@ namespace myfoodapp.Core.Business
             return string.Empty;
         }
 
-        private async Task<string> WriteAsync(string command, AtlasSensor currentSensor)
+        private string SendCommand(SerialPort serialPort, string command)
         {
-            Task<UInt32> storeAsyncTask;
+            string result = string.Empty;
 
-            currentSensor.currentSerialPort.Write(command);
+            serialPort.WriteLine(getStatusCommand);
 
-            return String.Empty;
-        }
+            var taskWait = Task.Run(async () =>
+            {
+                await Task.Delay(1000);
+            });
+            taskWait.Wait();
 
-        private async Task<string> ReadAsync(CancellationToken cancellationToken, AtlasSensor currentSensor)
-        {
-
-                return currentSensor.currentSerialPort.ReadLine();
-
+            result = serialPort.ReadExisting();
+            Console.WriteLine(result);
+            return result;                                
         }
 
         private void CloseDevice(AtlasSensor sensor)

@@ -57,7 +57,7 @@ namespace myfoodapp.Core
                         var lg = LogManager.GetInstance;                       
                         lg.AppendLog(Log.CreateLog("Log Manager Engaged", LogType.Information));
 
-                        var bw = new BackgroundWorker(logger);
+                        var bw = new BackgroundWorker(); 
                     }   
                 });
     }

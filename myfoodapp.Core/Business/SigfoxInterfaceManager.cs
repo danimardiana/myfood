@@ -14,8 +14,6 @@ namespace myfoodapp.Core.Business
         public bool isInitialized = false;
         private SerialPort serialPort;
 
-        private CancellationTokenSource ReadCancellationTokenSource;
-
         private static SigfoxInterfaceManager instance;
 
         public static SigfoxInterfaceManager GetInstance
@@ -30,7 +28,9 @@ namespace myfoodapp.Core.Business
             }
         }
 
-        private string sendMessageATCommand = "AT$SF={0},1\r";
+        private string sendMessageATCommandv1 = "AT$SF={0},2,1\r";
+        private string sendMessageATCommandv2 = "AT$SF={0},1\r";
+
         private string isOnlineATCommand = "AT\r";
         private string setEchoOFFATCommand = "ATE0\r";
 
@@ -38,65 +38,67 @@ namespace myfoodapp.Core.Business
         {         
         }
 
-        public void InitSensors()
+        public bool InitInterface()
         {
             if (isInitialized)
-                return;
+                return false;
 
             var watch = Stopwatch.StartNew();
 
             try
             {
-                string[] ports = SerialPort.GetPortNames();
+                string[] ports = SerialPort.GetPortNames();        
 
                 var sigfoxPortName = ports.ToList().Where(s => s.Contains(@"ttyAMA0")).FirstOrDefault();
                 
                 serialPort = new SerialPort(sigfoxPortName);
 
-                if (serialPort != null)
+                if (serialPort == null)
+                {
                     lg.AppendLog(Log.CreateLog("Sigfox device not found", LogType.System));
-                    try
-                    {
-                                try
-                                {
-                                    lg.AppendLog(Log.CreateLog("Associating Sigfox device", LogType.System));
+                    return false;
+                }
 
-                                    // Configure serial settings
-                                    serialPort.BaudRate = 9600;
-                                    serialPort.Parity = Parity.None;
-                                    serialPort.StopBits = StopBits.One;
-                                    serialPort.DataBits = 8;
-                                    serialPort.Handshake = Handshake.None;
-                                    serialPort.ReadTimeout = 5000;
-                                    serialPort.WriteTimeout = 5000;
+                lg.AppendLog(Log.CreateLog("Associating Sigfox device", LogType.System));
 
-                                    serialPort.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
-                                    serialPort.Open(); 
+                // Configure serial settings
+                serialPort.BaudRate = 9600;
+                serialPort.Parity = Parity.None;
+                serialPort.StopBits = StopBits.One;
+                serialPort.DataBits = 8;
+                serialPort.Handshake = Handshake.None;
+                serialPort.ReadTimeout = 2000;
+                serialPort.WriteTimeout = 2000;
 
-                                    serialPort.WriteLine(isOnlineATCommand);                            
-                                }
+                serialPort.Open(); 
 
-                                catch (AggregateException ex)
-                                {
-                                    lg.AppendLog(Log.CreateErrorLog("Exception on Sigfox Init", ex));
-                                }
-                    }
-                    catch (Exception ex)
-                    {
-                        lg.AppendLog(Log.CreateErrorLog("Exception on Sigfox Init", ex));
-                    }              
+                string strStatus = string.Empty;
+
+                serialPort.WriteLine(isOnlineATCommand);  
+
+                var tsk = Task.Run(async () =>
+                {
+                await Task.Delay(1000);
+                });
+                tsk.Wait();
+
+                strStatus = serialPort.ReadExisting();
+
+                Console.WriteLine(strStatus); 
+
+                isInitialized = true;
             }
+
             catch (Exception ex)
             {
                 lg.AppendLog(Log.CreateErrorLog("Exception on Sigfox Init", ex));
             }
             finally
-            {
-                isInitialized = true;
-
+            {               
                 lg.AppendLog(Log.CreateLog(String.Format("Sigfox Interface online in {0} sec.", watch.ElapsedMilliseconds / 1000), LogType.System));
                 watch.Stop();
             }
+            return isInitialized;
         }
 
         public void SendMessage(string message)
@@ -106,15 +108,17 @@ namespace myfoodapp.Core.Business
 
                 string strResult = String.Empty;
 
-                serialPort.WriteLine(String.Format(sendMessageATCommand, message));
-        }
+                serialPort.WriteLine(String.Format(sendMessageATCommandv2, message));
 
-        private static void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e)
-        {
-            SerialPort sp = (SerialPort)sender;
-            string indata = sp.ReadExisting();
-            Console.WriteLine("Data Received:");
-            Console.Write(indata);
+                var tsk = Task.Run(async () =>
+                {
+                await Task.Delay(1000);
+                });
+                tsk.Wait();
+
+                strResult = serialPort.ReadExisting();
+
+                Console.WriteLine(strResult);
         }
 
     }
