@@ -1,9 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -17,6 +12,7 @@ namespace myfoodapp.Core
 {
     public class Program
     {
+        private static ServiceProvider serviceProvider;
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();
@@ -48,17 +44,19 @@ namespace myfoodapp.Core
                         builder.AddFile(o => o.RootPath = AppContext.BaseDirectory);
                     });
 
-                    using (var sp = services.BuildServiceProvider())
-                    {
-                        ILogger<Program> logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<Program>();
+                    serviceProvider = services.BuildServiceProvider();
 
-                        LogManager.GetInstance.SetInstance(logger);
+                    ILogger<Program> logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<Program>();
 
-                        var lg = LogManager.GetInstance;                       
-                        lg.AppendLog(Log.CreateLog("Log Manager Engaged", LogType.Information));
+                    LogManager.GetInstance.SetInstance(logger);
 
-                        var bw = new BackgroundWorker(); 
-                    }   
+                    var lg = LogManager.GetInstance;                       
+                    lg.AppendLog(Log.CreateLog("Log Manager Engaged", LogType.Information));
+
+                    //var bw = new BackgroundManager(); 
+                    var bw = MeasureBackgroundTask.GetInstance;
+                    bw.Run();
+  
                 });
     }
 }

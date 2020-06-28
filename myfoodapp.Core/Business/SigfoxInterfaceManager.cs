@@ -38,10 +38,10 @@ namespace myfoodapp.Core.Business
         {         
         }
 
-        public bool InitInterface()
+        public void InitInterface()
         {
             if (isInitialized)
-                return false;
+                return;
 
             var watch = Stopwatch.StartNew();
 
@@ -56,7 +56,6 @@ namespace myfoodapp.Core.Business
                 if (serialPort == null)
                 {
                     lg.AppendLog(Log.CreateLog("Sigfox device not found", LogType.System));
-                    return false;
                 }
 
                 lg.AppendLog(Log.CreateLog("Associating Sigfox device", LogType.System));
@@ -98,7 +97,6 @@ namespace myfoodapp.Core.Business
                 lg.AppendLog(Log.CreateLog(String.Format("Sigfox Interface online in {0} sec.", watch.ElapsedMilliseconds / 1000), LogType.System));
                 watch.Stop();
             }
-            return isInitialized;
         }
 
         public void SendMessage(string message)

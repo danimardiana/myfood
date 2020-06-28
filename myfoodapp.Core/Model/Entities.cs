@@ -52,4 +52,11 @@ namespace myfoodapp.Core.Model
             humidity = 6,
             ORP = 7
         }
+
+        public class Message
+        {
+            public string content { get; set; }
+            public string device { get; set; }
+            public string date { get; set; }
+        }
 }

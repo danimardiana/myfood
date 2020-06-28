@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.IO.Ports;
 using myfoodapp.Core.Model;
@@ -129,115 +128,64 @@ namespace myfoodapp.Core.Business
 
                                     serialPort.Open();     
 
-                                    serialPort.WriteLine(informationCommand);
-                                   
-                                    var tsk = Task.Run(async () =>
+                                    var tsk = Task.Run(async() =>
                                      {
-                                          await Task.Delay(1000);
+                                        r = await SendCommand(serialPort, informationCommand);
                                      });
-                                     tsk.Wait();
+                                    tsk.Wait();             
 
-                                    r = serialPort.ReadExisting();
-
-                                    Console.WriteLine(r);
-
-                                    serialPort.WriteLine(getStatusCommand);
-
-                                    tsk = Task.Run(async () =>
+                                    tsk = Task.Run(async() =>
                                      {
-                                          await Task.Delay(1000);
+                                        s = await SendCommand(serialPort, getStatusCommand);                                  
                                      });
-                                    tsk.Wait();
+                                    tsk.Wait();                       
 
-                                    s = serialPort.ReadExisting();
-                                    Console.WriteLine(s);
-
-                                    serialPort.WriteLine(getContinuousModeStatus);
-
-                                    tsk = Task.Run(async () =>
+                                    tsk = Task.Run(async() =>
                                      {
-                                          await Task.Delay(1000);
+                                        strResult = await SendCommand(serialPort, getContinuousModeStatus);                                      
                                      });
-                                    tsk.Wait();
-
-                                    strResult = serialPort.ReadExisting();
-                                    Console.WriteLine(strResult);
-
+                                    tsk.Wait(); 
+                                                                   
                                     if(strResult.Contains(answersContinuousModeOn))
                                     {
-                                        serialPort.WriteLine(disableContinuousModeCommand);
-
-                                        tsk = Task.Run(async () =>
+                                        tsk = Task.Run(async() =>
                                         {
-                                            await Task.Delay(1000);
+                                            strResult = await SendCommand(serialPort, disableContinuousModeCommand);                                          
                                         });
-                                        tsk.Wait();
+                                     tsk.Wait();  
+                                            
+                                    }                                  
 
-                                        strResult = serialPort.ReadExisting();
-                                        Console.WriteLine(strResult);
-                                    }
-
-                                    serialPort.WriteLine(getAutomaticAnswerStatusv1);
-
-                                    tsk = Task.Run(async () =>
+                                    tsk = Task.Run(async() =>
                                      {
-                                          await Task.Delay(1000);
+                                        strResult = await SendCommand(serialPort, getAutomaticAnswerStatusv1);       
                                      });
-                                    tsk.Wait();
-
-                                    strResult = serialPort.ReadExisting();
-                                    Console.WriteLine(strResult);
+                                    tsk.Wait();    
+                                                                    
 
                                     if(strResult.Contains(answersAutomaticAnswerOnv1))
                                     {
-                                        serialPort.WriteLine(disableAutomaticAnswerCommandv1);
-
-                                        tsk = Task.Run(async () =>
+                                        tsk = Task.Run(async() =>
                                         {
-                                            await Task.Delay(1000);
+                                            strResult = await SendCommand(serialPort, disableAutomaticAnswerCommandv1);
                                         });
-                                        tsk.Wait();
-
-                                        strResult = serialPort.ReadExisting();
-                                        Console.WriteLine(strResult);
+                                        tsk.Wait();  
                                     }
 
-                                    serialPort.WriteLine(getAutomaticAnswerStatusv2);
-
-                                    tsk = Task.Run(async () =>
+                                    tsk = Task.Run(async() =>
                                      {
-                                          await Task.Delay(1000);
+                                        strResult = await SendCommand(serialPort, getAutomaticAnswerStatusv2);
                                      });
-                                    tsk.Wait();
-
-                                    strResult = serialPort.ReadExisting();
-                                    Console.WriteLine(strResult);
-
+                                    tsk.Wait(); 
+                                                      
                                     if(strResult.Contains(answersAutomaticAnswerOnv2))
                                     {
-                                        serialPort.WriteLine(disableAutomaticAnswerCommandv2);
-
-                                        tsk = Task.Run(async () =>
+                                        tsk = Task.Run(async() =>
                                         {
-                                            await Task.Delay(1000);
+                                            strResult = await SendCommand(serialPort, disableAutomaticAnswerCommandv2);
                                         });
-                                        tsk.Wait();
-
-                                        strResult = serialPort.ReadExisting();
-                                        Console.WriteLine(strResult);
-                                    }
-                                    
-                                    var newSensor = new AtlasSensor() { currentSerialPort = serialPort };
-
-                                    //var taskWakeUp = Task.Run(async () =>
-                                    //{
-                                    //    await WriteAsync(wakeupCommand, newSensor)
-                                    //        .ContinueWith((a) => strResult = ReadAsync(ReadCancellationTokenSource.Token, newSensor).Result);
-
-                                    //    await Task.Delay(1000);
-                                    //});
-
-                                    //taskWakeUp.Wait(20000);
+                                        tsk.Wait();                                                          
+                                    }  
 
                                     //if (isSleepModeActivated)
                                     //{
@@ -248,6 +196,8 @@ namespace myfoodapp.Core.Business
 
                                     //    taskSleep.Wait();
                                     //}
+
+                                    var newSensor = new AtlasSensor() { currentSerialPort = serialPort };
 
                                     lg.AppendLog(Log.CreateLog(String.Format("Sensor Information - {0}", r), LogType.System));
 
@@ -353,13 +303,11 @@ namespace myfoodapp.Core.Business
 
             if (currentSensor != null)
             {
-                string strResult = String.Empty;
-
-                // var taskCal = Task.Run(async () => {
-                //     await WriteAsync(calibrationCommand, currentSensor);
-                // });
-
-                // taskCal.Wait();
+                var tsk = Task.Run(async() =>
+                {
+                    await SendCommand(currentSensor.currentSerialPort, calibrationCommand);
+                });
+                tsk.Wait(); 
             }
         }
 
@@ -374,11 +322,11 @@ namespace myfoodapp.Core.Business
             {
                 string strQuery = String.Format(setCalibrationCommand, calibrationValue);
 
-                // var taskCal = Task.Run(async () => {
-                //     await WriteAsync(strQuery, currentSensor);
-                // });
-
-                // taskCal.Wait();
+                var tsk = Task.Run(async() =>
+                {
+                    await SendCommand(currentSensor.currentSerialPort, strQuery);
+                });
+                tsk.Wait(); 
             }
         }
 
@@ -391,13 +339,11 @@ namespace myfoodapp.Core.Business
 
             if (currentSensor != null)
             {
-                string strResult = String.Empty;
-
-                // var taskCal = Task.Run(async () => {
-                //     await WriteAsync(clearCalibrationCommand, currentSensor);
-                // });
-
-                // taskCal.Wait();
+                var tsk = Task.Run(async() =>
+                {
+                    await SendCommand(currentSensor.currentSerialPort, clearCalibrationCommand);
+                });
+                tsk.Wait();              
             }
         }
 
@@ -410,14 +356,11 @@ namespace myfoodapp.Core.Business
 
             foreach (AtlasSensor currentSensor in sensorsList)
             {
-
-                string strResult = String.Empty;
-
-                // var taskDebugMode = Task.Run(async () => {
-                //     await WriteAsync(String.Format(ledDebugCommand, strIsEnable), currentSensor);
-                // });
-
-                // taskDebugMode.Wait();
+                var tsk = Task.Run(async() =>
+                {
+                    await SendCommand(currentSensor.currentSerialPort, String.Format(ledDebugCommand, strIsEnable));
+                });
+                tsk.Wait();
             }
         }
 
@@ -428,29 +371,31 @@ namespace myfoodapp.Core.Business
 
             foreach(AtlasSensor currentSensor in sensorsList)
             {
-                string strResult = String.Empty;
+                var currentSerialPort = currentSensor.currentSerialPort;
 
-                // var taskReset = Task.Run(async () => {
-                //     await WriteAsync(String.Format(resetFactoryCommand), currentSensor);
-                //     await Task.Delay(5000);
-                // });
-
-                // taskReset.Wait();
-
-                // var taskAuto = Task.Run(async () =>
-                // {
-                //     await WriteAsync(disableAutomaticAnswerCommand, currentSensor);
-                //     await Task.Delay(5000);
-                // });
-                // taskAuto.Wait();
-
-                var taskContinuous = Task.Run(async () =>
+                var tsk = Task.Run(async() =>
                 {
-                    // await WriteAsync(disableContinuousModeCommand, currentSensor);
-                    // await Task.Delay(5000);
+                    await SendCommand(currentSerialPort, resetFactoryCommand);
                 });
-                taskContinuous.Wait();
+                tsk.Wait();
 
+                tsk = Task.Run(async() =>
+                {
+                    await SendCommand(currentSerialPort, disableAutomaticAnswerCommandv1);
+                });
+                tsk.Wait();
+
+                tsk = Task.Run(async() =>
+                {
+                    await SendCommand(currentSerialPort, disableAutomaticAnswerCommandv2);
+                });
+                tsk.Wait();
+
+                tsk = Task.Run(async() =>
+                {
+                    await SendCommand(currentSerialPort, disableContinuousModeCommand);
+                });
+                tsk.Wait();
             }
         }
 
@@ -467,13 +412,11 @@ namespace myfoodapp.Core.Business
 
                 //taskWakeUp.Wait();
 
-                // var taskSetTemp = Task.Run(async () =>
-                // {
-                //     await WriteAsync(String.Format(setWaterTemperatureCommand, waterTemperature), phSensor);
-
-                // });
-
-                // taskSetTemp.Wait();
+                var tsk = Task.Run(async() =>
+                {
+                    await SendCommand(phSensor.currentSerialPort, String.Format(setWaterTemperatureCommand, waterTemperature));
+                });
+                tsk.Wait();
 
                 return true;
             }
@@ -501,17 +444,15 @@ namespace myfoodapp.Core.Business
                 //    taskWakeUp.Wait();
                 //}
 
-                // var taskMeasure = Task.Run(async () => {
-                //     await WriteAsync(readValueCommand, currentSensor)
-                //          .ContinueWith((a) => strResult = ReadAsync(ReadCancellationTokenSource.Token, currentSensor).Result);
-
-                //     var boolMeasure = Decimal.TryParse(strResult.Replace("\r", "")
-                //                                                 .Replace(answersSleepMode, "")
-                //                                                 .Replace(answersWakeUpMode, "")
-                //                                                 , out capturedMesure);
-                // });
-
-                // taskMeasure.Wait();
+                var tsk = Task.Run(async() =>
+                {
+                    strResult = await SendCommand(currentSensor.currentSerialPort, readValueCommand);
+                    var boolMeasure = Decimal.TryParse(strResult.Replace("\r", "")
+                                                               .Replace(answersSleepMode, "")
+                                                               .Replace(answersWakeUpMode, "")
+                                                               ,out capturedMesure);
+                });
+                tsk.Wait();
 
                 //if (isSleepModeActivated)
                 //{
@@ -525,11 +466,10 @@ namespace myfoodapp.Core.Business
 
                 return capturedMesure;
             }
-
             return 0;
         }
 
-        public decimal RecordPhMeasure(bool isSleepModeActivated)
+        public decimal RecordpHMeasure(bool isSleepModeActivated)
         {
             var phSensor = this.GetSensor(SensorTypeEnum.pH);
 
@@ -549,29 +489,20 @@ namespace myfoodapp.Core.Business
                 //    taskWakeUp.Wait();
                 //}
 
-                phSensor.currentSerialPort.Write(readValueCommand);
-
                 for (int i = 0; i < 4; i++)
                 {
-                var r = String.Empty;
-
-                while(r == String.Empty)
-                {
-                    if(phSensor.currentSerialPort.BytesToRead > 0)
+                    var tsk = Task.Run(async() =>
                     {
-                        r = phSensor.currentSerialPort.ReadLine();
-                        Console.Write(r);
-                    }
-                }
+                        strResult.Append(await SendCommand(phSensor.currentSerialPort, readValueCommand));
+                    });
+                    tsk.Wait();
 
-                decimal capturedMesure = 0;
+                    decimal capturedMesure = 0;
 
-                var boolMeasure_1 = Decimal.TryParse(strResult.ToString().Replace("\r", "")
-                                                                        .Replace(answersSleepMode, "")
-                                                                        .Replace(answersWakeUpMode, ""), out capturedMesure);
-                sumCapturedMesure += capturedMesure;
-
-
+                    var boolMeasure_1 = Decimal.TryParse(strResult.ToString().Replace("\r", "")
+                                                                            .Replace(answersSleepMode, "")
+                                                                            .Replace(answersWakeUpMode, ""), out capturedMesure);
+                    sumCapturedMesure += capturedMesure;
                 }
 
                 //if (isSleepModeActivated)
@@ -610,13 +541,11 @@ namespace myfoodapp.Core.Business
                 //    taskWakeUp.Wait();
                 //}
 
-                // var taskStatus = Task.Run(async () => {
-                //     await WriteAsync(getStatusCommand, currentSensor)
-                //          .ContinueWith((a) => strResult = ReadAsync(ReadCancellationTokenSource.Token, currentSensor).Result);
-
-                // });
-
-                // taskStatus.Wait();
+                var tsk = Task.Run(async() =>
+                {
+                    strResult = await SendCommand(currentSensor.currentSerialPort, getStatusCommand);
+                });
+                tsk.Wait();
 
                 //if (isSleepModeActivated)
                 //{
@@ -634,19 +563,14 @@ namespace myfoodapp.Core.Business
             return string.Empty;
         }
 
-        private string SendCommand(SerialPort serialPort, string command)
+        private async Task<string> SendCommand(SerialPort serialPort, string command)
         {
             string result = string.Empty;
 
-            serialPort.WriteLine(getStatusCommand);
-
-            var taskWait = Task.Run(async () =>
-            {
-                await Task.Delay(1000);
-            });
-            taskWait.Wait();
-
+            serialPort.WriteLine(command);
+            await Task.Delay(1000);
             result = serialPort.ReadExisting();
+
             Console.WriteLine(result);
             return result;                                
         }
