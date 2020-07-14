@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using myfoodapp.Core.Common;
 using myfoodapp.Core.Business;
 
-
 namespace myfoodapp.Core
 {
     public class Program

@@ -66,8 +66,8 @@ namespace myfoodapp.Core.Business
                 serialPort.StopBits = StopBits.One;
                 serialPort.DataBits = 8;
                 serialPort.Handshake = Handshake.None;
-                serialPort.ReadTimeout = 2000;
-                serialPort.WriteTimeout = 2000;
+                serialPort.ReadTimeout = 5000;
+                serialPort.WriteTimeout = 5000;
 
                 serialPort.Open(); 
 
@@ -104,7 +104,7 @@ namespace myfoodapp.Core.Business
             if (!isInitialized)
                 return;
 
-                string strResult = String.Empty;
+                //string strResult = String.Empty;
 
                 serialPort.WriteLine(String.Format(sendMessageATCommandv2, message));
 
@@ -114,9 +114,9 @@ namespace myfoodapp.Core.Business
                 });
                 tsk.Wait();
 
-                strResult = serialPort.ReadExisting();
+                //strResult = serialPort.ReadExisting();
 
-                Console.WriteLine(strResult);
+               //Console.WriteLine(strResult);
         }
 
     }

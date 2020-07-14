@@ -11,7 +11,7 @@ namespace myfoodapp.Core.Model
 
             protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
             {
-                optionsBuilder.UseSqlite("Data Source=myfood.db");
+                optionsBuilder.UseSqlite(@"Data Source=/home/pi/share/myfoodapp.Core/myfood.db");
             }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

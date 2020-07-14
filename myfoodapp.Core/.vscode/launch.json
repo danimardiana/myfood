@@ -42,6 +42,7 @@
             "cwd": "/home/pi/share/${workspaceFolderBasename}",
             "stopAtEntry": false,
             "requireExactSource": false,
+            "enableStepFiltering": false,
             "console": "internalConsole",
             "pipeTransport": {
                 "pipeCwd": "${workspaceFolder}",
@@ -49,7 +50,7 @@
                 "pipeArgs": [
                     "-pw",
                     "raspberry",
-                    "pi@raspberrypi.local"
+                    "pi@192.168.1.35"
                 ],
                 "debuggerPath": "/home/pi/vsdbg/vsdbg"
             }

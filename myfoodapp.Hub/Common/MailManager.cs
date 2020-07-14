@@ -53,6 +53,7 @@ namespace myfoodapp.Hub.Common
 
                 obj.firstName = currentProductionUnit.owner.pioneerCitizenName;
                 obj.pioneerNumber = currentProductionUnit.owner.pioneerCitizenNumber.ToString();
+                obj.info = currentProductionUnit.info;
 
                 if (currentProductionUnit.productionUnitType.name.ToString().Contains("Family"))
                     obj.isFamily = true;
@@ -128,6 +129,7 @@ namespace myfoodapp.Hub.Common
 
                 obj.firstName = currentProductionUnit.owner.pioneerCitizenName;
                 obj.pioneerNumber = currentProductionUnit.owner.pioneerCitizenNumber.ToString();
+                obj.info = currentProductionUnit.info;
 
                 if (currentProductionUnit.productionUnitType.name.ToString().Contains("Family"))
                     obj.isFamily = true;
@@ -263,6 +265,7 @@ namespace myfoodapp.Hub.Common
 
                 obj.firstName = currentProductionUnit.owner.pioneerCitizenName;
                 obj.pioneerNumber = currentProductionUnit.owner.pioneerCitizenNumber.ToString();
+                obj.info = currentProductionUnit.info;
 
                 if (currentProductionUnit.productionUnitType.name.ToString().Contains("Family"))
                     obj.isFamily = true;
@@ -373,6 +376,7 @@ namespace myfoodapp.Hub.Common
             //msg.AddCc("agro@myfood.eu");
             var response = client.SendEmailAsync(msg);
         }
+
     }
 
     public class MailTemplateObject
@@ -382,6 +386,9 @@ namespace myfoodapp.Hub.Common
 
         [JsonProperty("pioneerNumber")]
         public string pioneerNumber;
+
+        [JsonProperty("info")]
+        public string info;
 
         [JsonProperty("isFamily")]
         public bool isFamily;

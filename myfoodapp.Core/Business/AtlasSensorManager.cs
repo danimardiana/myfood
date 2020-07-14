@@ -493,7 +493,8 @@ namespace myfoodapp.Core.Business
                 {
                     var tsk = Task.Run(async() =>
                     {
-                        strResult.Append(await SendCommand(phSensor.currentSerialPort, readValueCommand));
+                        var str = await SendCommand(phSensor.currentSerialPort, readValueCommand);
+                        strResult.Append(str);
                     });
                     tsk.Wait();
 
@@ -503,6 +504,7 @@ namespace myfoodapp.Core.Business
                                                                             .Replace(answersSleepMode, "")
                                                                             .Replace(answersWakeUpMode, ""), out capturedMesure);
                     sumCapturedMesure += capturedMesure;
+                    strResult.Clear();
                 }
 
                 //if (isSleepModeActivated)

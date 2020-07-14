@@ -14,17 +14,16 @@ namespace myfoodapp.Core.Business
     public sealed class MeasureBackgroundTask
     {
         private BackgroundWorker bw = new BackgroundWorker();
+        private static readonly AsyncLock asyncLock = new AsyncLock();
         private AtlasSensorManager sensorManager;
+        private HumidityTemperatureManager humTempManager;
         private SigfoxInterfaceManager sigfoxManager;
         private UserSettings userSettings;
-
         private UserSettingsModel userSettingsModel = UserSettingsModel.GetInstance;
         private LogManager lg = LogManager.GetInstance;
         private DatabaseModel databaseModel = DatabaseModel.GetInstance;
-
         private int TICKSPERCYCLE = 600000;
         private int TICKSPERCYCLE_DIAGNOSTIC_MODE = 60000;
-
         public event EventHandler Completed;
 
         private static MeasureBackgroundTask instance;
@@ -40,7 +39,6 @@ namespace myfoodapp.Core.Business
                 return instance;
             }
         }
-
         private MeasureBackgroundTask()
         {
             lg.AppendLog(Log.CreateLog("Measure Service starting...", LogType.System));
@@ -55,7 +53,6 @@ namespace myfoodapp.Core.Business
             if(userSettings.isDiagnosticModeEnable)
             {
                 userSettings.isDiagnosticModeEnable = false;
-
                 userSettingsModel.SyncUserSettings(userSettings);
             }
 
@@ -63,12 +60,6 @@ namespace myfoodapp.Core.Business
             bw.WorkerReportsProgress = true;
             bw.DoWork += Bw_DoWork;
             bw.RunWorkerCompleted += Bw_RunWorkerCompleted;
-            bw.ProgressChanged += Bw_ProgressChanged;
-        }
-
-        private void Bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            //Messenger.Default.Send(new RefreshDashboardMessage());
         }
 
         public void Run()
@@ -79,12 +70,10 @@ namespace myfoodapp.Core.Business
             lg.AppendLog(Log.CreateLog("Measure Service running...", LogType.System));
             bw.RunWorkerAsync();
         }
-
         public void Stop()
         {
             bw.CancelAsync();
         }
-
         private void Bw_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             lg.AppendLog(Log.CreateLog("Measure Service stopping...", LogType.System));
@@ -94,6 +83,8 @@ namespace myfoodapp.Core.Business
         private void Bw_DoWork(object sender, DoWorkEventArgs e)
         {
             var watch = Stopwatch.StartNew();
+
+            var sigFoxSignature = new StringBuilder("AAAAAAAAAAAAAAAAAAAAAAAA", 24);
 
             if (userSettings.measureFrequency >= 60000)
                 TICKSPERCYCLE = userSettings.measureFrequency;
@@ -120,15 +111,13 @@ namespace myfoodapp.Core.Business
             if(userSettings.isSigFoxComEnable)
             {
                 sigfoxManager.InitInterface();
+                sigfoxManager.SendMessage(sigFoxSignature.ToString());
             }
 
             if (userSettings.isDiagnosticModeEnable)
             {
                 TICKSPERCYCLE = TICKSPERCYCLE_DIAGNOSTIC_MODE;
-
-                if(userSettings.isSigFoxComEnable && sigfoxManager.isInitialized)
-                    sigfoxManager.SendMessage("AAAAAAAAAAAAAAAAAAAAAAAA");
-            }
+            }           
                 
             sensorManager = AtlasSensorManager.GetInstance;
 
@@ -136,7 +125,7 @@ namespace myfoodapp.Core.Business
 
             sensorManager.SetDebugLedMode(userSettings.isDebugLedEnable);
 
-            var humTempManager = HumidityTemperatureManager.GetInstance;
+            humTempManager = HumidityTemperatureManager.GetInstance;
 
             if (userSettings.isTempHumiditySensorEnable)
             {
@@ -175,8 +164,13 @@ namespace myfoodapp.Core.Business
                                 decimal capturedValue = 0;
                                 capturedValue = sensorManager.RecordSensorsMeasure(SensorTypeEnum.waterTemperature, userSettings.isSleepModeEnable);
 
-                                if (capturedValue > -20 && capturedValue < 80)
+                                if (capturedValue > 0 && capturedValue < 80)
                                 {
+                                    sigFoxSignature[4] = '0';
+                                    sigFoxSignature[5] = capturedValue.ToString()[0];
+                                    sigFoxSignature[6] = capturedValue.ToString()[1];
+                                    sigFoxSignature[7] = capturedValue.ToString()[3];
+
                                     if (!userSettings.isDiagnosticModeEnable)
                                     sensorManager.SetWaterTemperatureForPHSensor(capturedValue);
 
@@ -194,7 +188,13 @@ namespace myfoodapp.Core.Business
                                         }     
                                 }
                                 else
-                                lg.AppendLog(Log.CreateLog(String.Format("Water Temperature value out of range - {0}", capturedValue), LogType.Warning));
+                                {
+                                    lg.AppendLog(Log.CreateLog(String.Format("Water Temperature value out of range - {0}", capturedValue), LogType.Warning));
+                                    sigFoxSignature[4] = 'B';
+                                    sigFoxSignature[6] = 'B';
+                                    sigFoxSignature[7] = 'B';
+                                    sigFoxSignature[8] = 'B';
+                                }
                            }
 
                             if (sensorManager.isSensorOnline(SensorTypeEnum.pH))
@@ -207,6 +207,11 @@ namespace myfoodapp.Core.Business
 
                                 if (capturedValue > 1 && capturedValue < 12)
                                 {
+                                    sigFoxSignature[0] = '0';
+                                    sigFoxSignature[1] = '0';
+                                    sigFoxSignature[2] = capturedValue.ToString()[0];
+                                    sigFoxSignature[3] = capturedValue.ToString()[2];
+
                                     var task = Task.Run(async () =>
                                     {
                                         await databaseModel.AddMesure(captureDateTime, capturedValue, SensorTypeEnum.pH);
@@ -221,192 +226,95 @@ namespace myfoodapp.Core.Business
                                     }              
                                 }
                                 else
-                                lg.AppendLog(Log.CreateLog(String.Format("PH value out of range - {0}", capturedValue), LogType.Warning));
-                            }
-
-                            if (sensorManager.isSensorOnline(SensorTypeEnum.ORP))
-                            {
-                                if (userSettings.isDiagnosticModeEnable)
-                                   lg.AppendLog(Log.CreateLog("ORP capturing", LogType.Information));
-
-                                decimal capturedValue = 0;
-                                capturedValue = sensorManager.RecordSensorsMeasure(SensorTypeEnum.ORP, userSettings.isSleepModeEnable);
-
-                                if (capturedValue > 0 && capturedValue < 1500)
                                 {
-                                    var task = Task.Run(async () =>
-                                    {
-                                        await databaseModel.AddMesure(captureDateTime, capturedValue, SensorTypeEnum.ORP);
-                                    });
-                                    task.Wait();
-
-                                    if (userSettings.isDiagnosticModeEnable)
-                                    {
-                                        lg.AppendLog(Log.CreateLog(String.Format("ORP captured : {0}", capturedValue), LogType.Information));
-                                        var status = sensorManager.GetSensorStatus(SensorTypeEnum.ORP, userSettings.isSleepModeEnable);
-                                        lg.AppendLog(Log.CreateLog(String.Format("ORP status : {0}", status), LogType.System));
-                                    }
-                                }
-                                else
-                                    lg.AppendLog(Log.CreateLog(String.Format("ORP value out of range - {0}", capturedValue), LogType.Warning));
-                            }  
-
-                            if (sensorManager.isSensorOnline(SensorTypeEnum.dissolvedOxygen))
-                            {
-                                if (userSettings.isDiagnosticModeEnable)
-                                  lg.AppendLog(Log.CreateLog("DO capturing", LogType.Information));
-
-                                decimal capturedValue = 0;
-                                capturedValue = sensorManager.RecordSensorsMeasure(SensorTypeEnum.dissolvedOxygen, userSettings.isSleepModeEnable);
-
-                                if (capturedValue > 0 && capturedValue < 100)
-                                {
-                                    var task = Task.Run(async () =>
-                                    {
-                                        await databaseModel.AddMesure(captureDateTime, capturedValue, SensorTypeEnum.dissolvedOxygen);
-                                    });
-                                    task.Wait();
-
-                                    if (userSettings.isDiagnosticModeEnable)
-                                    {
-                                        lg.AppendLog(Log.CreateLog(String.Format("DO captured : {0}", capturedValue), LogType.Information));
-                                        var status = sensorManager.GetSensorStatus(SensorTypeEnum.dissolvedOxygen, userSettings.isSleepModeEnable);
-                                        lg.AppendLog(Log.CreateLog(String.Format("DO status : {0}", status), LogType.System));
-                                    }
-                                }
-                                else
-                                lg.AppendLog(Log.CreateLog(String.Format("DO value out of range - {0}", capturedValue), LogType.Warning));
-                            }
-
-                        if (sensorManager.isSensorOnline(SensorTypeEnum.EC))
-                        {
-                            if (userSettings.isDiagnosticModeEnable)
-                                lg.AppendLog(Log.CreateLog("EC capturing", LogType.Information));
-
-                            decimal capturedValue = 0;
-                            capturedValue = sensorManager.RecordSensorsMeasure(SensorTypeEnum.EC, userSettings.isSleepModeEnable);
-
-                            if (capturedValue > 0)
-                            {
-                                var task = Task.Run(async () =>
-                                {
-                                    await databaseModel.AddMesure(captureDateTime, capturedValue, SensorTypeEnum.EC);
-                                });
-                                task.Wait();
-
-                                if (userSettings.isDiagnosticModeEnable)
-                                {
-                                    lg.AppendLog(Log.CreateLog(String.Format("EC captured : {0}", capturedValue), LogType.Information));
-                                    var status = sensorManager.GetSensorStatus(SensorTypeEnum.EC, userSettings.isSleepModeEnable);
-                                    lg.AppendLog(Log.CreateLog(String.Format("EC status : {0}", status), LogType.System));
+                                    lg.AppendLog(Log.CreateLog(String.Format("PH value out of range - {0}", capturedValue), LogType.Warning));
+                                    sigFoxSignature[0] = 'B';
+                                    sigFoxSignature[1] = 'B';
+                                    sigFoxSignature[2] = 'B';
+                                    sigFoxSignature[3] = 'B';
                                 }
                             }
-                            else
-                                lg.AppendLog(Log.CreateLog(String.Format("EC value out of range - {0}", capturedValue), LogType.Warning));
-                        }
-
+                            
                         if (userSettings.isTempHumiditySensorEnable)
                             {
                                 try
                                 {
                                     if (userSettings.isDiagnosticModeEnable)
-                                        lg.AppendLog(Log.CreateLog("Air Temperature capturing", LogType.Information));
+                                        lg.AppendLog(Log.CreateLog("Air Temperature Humidity capturing", LogType.Information));
 
                                         decimal capturedValue = 0;
-                                        Task.Run(async() => 
-                                        {
-                                            capturedValue = (decimal)humTempManager.Temperature;
-                                            await Task.Delay(1000);
+
+                                         Task.Run(async() => 
+                                         {
+                                            using (await asyncLock.LockAsync())
+                                            {
+                                             await Task.Delay(1000);
+                                             capturedValue = (decimal)humTempManager.Temperature;
+                                             Console.WriteLine(capturedValue);
+                                             await Task.Delay(1000);
+                                             await databaseModel.AddMesure(captureDateTime, capturedValue, SensorTypeEnum.airTemperature);
+                                            
+                                             sigFoxSignature[16] = '0';
+                                             sigFoxSignature[17] = capturedValue.ToString()[0];
+                                             sigFoxSignature[18] = capturedValue.ToString()[1];
+                                             sigFoxSignature[19] = capturedValue.ToString()[3];
+
+                                             if (userSettings.isDiagnosticModeEnable)
+                                                 lg.AppendLog(Log.CreateLog(String.Format("Air Temperature captured : {0}", capturedValue), LogType.Information));
+                                             
+                                             await Task.Delay(1000);
+                                             capturedValue = (decimal)humTempManager.Humidity;
+                                             Console.WriteLine(capturedValue);
+                                             await Task.Delay(1000);    
+                                             await databaseModel.AddMesure(captureDateTime, capturedValue, SensorTypeEnum.humidity);
+
+                                             sigFoxSignature[20] = '0';
+                                             sigFoxSignature[21] = capturedValue.ToString()[0];
+                                             sigFoxSignature[22] = capturedValue.ToString()[1];
+                                             sigFoxSignature[23] = capturedValue.ToString()[3];
+
+                                             if (userSettings.isDiagnosticModeEnable)
+                                                 lg.AppendLog(Log.CreateLog(String.Format("Air Humidity captured : {0}", capturedValue), LogType.Information));  
+                                            }
+                                             
                                         }).Wait();                                 
-
-                                if (capturedValue > 0 && capturedValue < 100)
-                                {
-                                    var taskTemp = Task.Run(async () =>
-                                    {
-                                        await databaseModel.AddMesure(captureDateTime, capturedValue, SensorTypeEnum.airTemperature);
-                                    });
-                                    taskTemp.Wait();
-
-                                    if (userSettings.isDiagnosticModeEnable)
-                                        lg.AppendLog(Log.CreateLog(String.Format("Air Temperature captured : {0}", capturedValue), LogType.Information));
-                                }
-                                else
-                                    lg.AppendLog(Log.CreateLog(String.Format("Air Temperature out of range - {0}", capturedValue), LogType.Warning));
                                 }
                                 catch (Exception ex)
                                 {
-                                    lg.AppendLog(Log.CreateErrorLog("Exception on Air Temperature Sensor", ex));
-                                }
-
-                                try
-                                {
-                                    if (userSettings.isDiagnosticModeEnable)
-                                        lg.AppendLog(Log.CreateLog("Humidity capturing", LogType.Information));
-
-                                        decimal capturedValue = 0;
-                                        Task.Run(async() => 
-                                        {
-                                            capturedValue = (decimal)humTempManager.Humidity;
-                                            await Task.Delay(1000);
-                                        }).Wait(); 
-
-                                if (capturedValue > 0 && capturedValue < 100)
-                                {
-                                    var taskHum = Task.Run(async () =>
-                                    {
-                                        await databaseModel.AddMesure(captureDateTime, capturedValue, SensorTypeEnum.humidity);
-                                    });
-                                    taskHum.Wait();
-
-                                    if (userSettings.isDiagnosticModeEnable)
-                                        lg.AppendLog(Log.CreateLog(String.Format("Air Humidity captured : {0}", capturedValue), LogType.Information));
-                                }
-                                else
-                                    lg.AppendLog(Log.CreateLog(String.Format("Air Humidity out of range - {0}", capturedValue), LogType.Warning));
-                                }
-                                catch (Exception ex)
-                                {
-                                lg.AppendLog(Log.CreateErrorLog("Exception on Air Humidity Sensor", ex));
+                                    lg.AppendLog(Log.CreateErrorLog("Exception on Air Temperature Humidity Sensor", ex));
+                                    sigFoxSignature[16] = 'C';
+                                    sigFoxSignature[17] = 'C';
+                                    sigFoxSignature[18] = 'C';
+                                    sigFoxSignature[19] = 'C';
+                                    sigFoxSignature[20] = 'C';
+                                    sigFoxSignature[21] = 'C';
+                                    sigFoxSignature[22] = 'C';
+                                    sigFoxSignature[23] = 'C';
                                 }
                             }
 
-                           lg.AppendLog(Log.CreateLog(String.Format("Measures captured in {0} sec.", watchMesures.ElapsedMilliseconds / 1000), LogType.System));  
+                        lg.AppendLog(Log.CreateLog(String.Format("Measures captured in {0} sec.", watchMesures.ElapsedMilliseconds / 1000), LogType.System));  
                         
                         if(userSettings.isSigFoxComEnable && sigfoxManager.isInitialized && TICKSPERCYCLE >= 600000)
                         {
                             watchMesures.Restart();
 
-                            string sigFoxSignature = String.Empty;
-
-                            var taskSig = Task.Run(async () =>
+                            Task.Run(async () =>
                             {
-                                sigFoxSignature = await databaseModel.GetLastMesureSignature();
-                            });
-                            taskSig.Wait();
-
-                            sigfoxManager.SendMessage(sigFoxSignature);
-
-                            //if (userSettings.isDiagnosticModeEnable)
-                            //    sigfoxManager.Listen();
+                                sigfoxManager.SendMessage(sigFoxSignature.ToString());
+                                await Task.Delay(2000);    
+                            }).Wait();
 
                             lg.AppendLog(Log.CreateLog(String.Format("Data sent to Azure via Sigfox in {0} sec.", watchMesures.ElapsedMilliseconds / 1000), LogType.System));
                         }
 
                         if (!userSettings.isSigFoxComEnable && NetworkInterface.GetIsNetworkAvailable())
                         {
-                            string sigFoxSignature = String.Empty;
-
-                            var taskSig = Task.Run(async () =>
-                            {
-                                sigFoxSignature = await databaseModel.GetLastMesureSignature();
-                            });
-                            taskSig.Wait();
-
                             using (var client = new HttpClient())
                             {
                                 var request = new Message()
                                 {
-                                    content = sigFoxSignature,
+                                    content = sigFoxSignature.ToString(),
                                     device = userSettings.productionSiteId,
                                     date = DateTime.Now.ToString(),
                                 };
@@ -440,10 +348,10 @@ namespace myfoodapp.Core.Business
                 catch (Exception ex)
                 {
                     lg.AppendLog(Log.CreateErrorLog("Exception on Measures", ex));
+                    sigfoxManager.SendMessage("CCCCCCCCCCCCCCCCCCCCCCCC");
                 }
             }
             watch.Stop();
         }
     }
-
 }

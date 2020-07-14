@@ -14,6 +14,25 @@ namespace myfoodapp.Core.Business
             var log = LogManager.GetInstance;
             log.AppendLog(Log.CreateLog("Background Worker Engaged", LogType.Information));
 
+            var to = HumidityTemperatureManager.GetInstance;
+            to.Connect();
+
+            decimal capt = 0;
+
+            for(int i = 0; i < 10; i++)
+            {
+                Task.Run(async() => 
+                    {  
+                        await Task.Delay(1000);
+                        capt = (decimal)to.Temperature;
+                        Console.WriteLine(capt);
+                        await Task.Delay(1000);
+                        capt = (decimal)to.Humidity;
+                        Console.WriteLine(capt);
+                        //to.Dispose();
+                }).Wait(); 
+            }  
+
             var clock = ClockManager.GetInstance;
 
             Task.Run(async() => 
@@ -23,31 +42,33 @@ namespace myfoodapp.Core.Business
             clock.SetDate(DateTime.Now);
             }).Wait(); 
 
-            for(int i = 0; i < 10; i++)
+            DateTime date = DateTime.Now;
+
+            for(int i = 0; i < 2; i++)
             {
                 Task.Run(async() => 
                     {
                         clock.InitClock();
                         await Task.Delay(1000);
-                        DateTime date = clock.ReadDate();
+                        date = clock.ReadDate();
                         Console.WriteLine(date.ToLongDateString());
                         clock.Dispose();
                 }).Wait(); 
             };
+            
+            string setDay = String.Format(@"date +%Y%m%d -s ""{0}""", date.ToShortDateString());
 
-            var to = HumidityTemperatureManager.GetInstance;
+            string setHour = String.Format(@"date +%T -s ""{0}""", date.ToShortDateString());
+            
+            var tt1 = setDay.Bash();
+            Console.WriteLine(tt1);
 
-            for(int i = 0; i < 10; i++)
-            {
-                Task.Run(async() => 
-                    {
-                        to.Connect();
-                        await Task.Delay(1000);
-                        Console.WriteLine(to.Humidity);
-                        Console.WriteLine(to.Temperature);
-                        to.Dispose();
-                }).Wait(); 
-            }       
+            var tt11 = setHour.Bash();
+            Console.WriteLine(tt1);
+
+            Console.WriteLine("date".Bash());
+
+            var allValues = Enum.GetValues(typeof(SensorTypeEnum));     
 
             var sg = SigfoxInterfaceManager.GetInstance;
             sg.InitInterface();
@@ -63,7 +84,7 @@ namespace myfoodapp.Core.Business
             
             try 
             {
-                var tt1 = "sudo /opt/vc/bin/vcgencmd measure_temp".Bash();
+                var tt3 = "sudo /opt/vc/bin/vcgencmd measure_temp".Bash();
                 Console.WriteLine(tt1);
 
                 var tt2 = "sudo iwlist wlan0 scanning | grep ESSID".Bash();
