@@ -19,13 +19,12 @@ namespace myfoodapp.Core.Business
         private HumidityTemperatureManager humTempManager;
         private SigfoxInterfaceManager sigfoxManager;
         private UserSettings userSettings;
-        private UserSettingsModel userSettingsModel = UserSettingsModel.GetInstance;
+        private UserSettingsManager userSettingsManager = UserSettingsManager.GetInstance;
         private LogManager lg = LogManager.GetInstance;
         private DatabaseModel databaseModel = DatabaseModel.GetInstance;
         private int TICKSPERCYCLE = 600000;
         private int TICKSPERCYCLE_DIAGNOSTIC_MODE = 60000;
         public event EventHandler Completed;
-
         private static MeasureBackgroundTask instance;
 
         public static MeasureBackgroundTask GetInstance
@@ -45,7 +44,7 @@ namespace myfoodapp.Core.Business
 
             userSettings = new UserSettings();
 
-            userSettings = userSettingsModel.GetUserSettings();
+            userSettings = userSettingsManager.GetUserSettings();
 
             lg.AppendLog(Log.CreateLog("UserSettings retreived", LogType.System));
 
@@ -53,7 +52,7 @@ namespace myfoodapp.Core.Business
             if(userSettings.isDiagnosticModeEnable)
             {
                 userSettings.isDiagnosticModeEnable = false;
-                userSettingsModel.SyncUserSettings(userSettings);
+                userSettingsManager.SyncUserSettings(userSettings);
             }
 
             bw.WorkerSupportsCancellation = true;
@@ -104,14 +103,14 @@ namespace myfoodapp.Core.Business
                 }).Wait();               
             }
 
-            userSettings = userSettingsModel.GetUserSettings();
+            userSettings = userSettingsManager.GetUserSettings();
 
             sigfoxManager = SigfoxInterfaceManager.GetInstance;
 
-            if(userSettings.isSigFoxComEnable)
+            if(userSettings.connectivityType == ConnectivityType.Sigfox)
             {
                 sigfoxManager.InitInterface();
-                sigfoxManager.SendMessage(sigFoxSignature.ToString());
+                sigfoxManager.SendMessage(sigFoxSignature.ToString(), userSettings.sigfoxVersion);
             }
 
             if (userSettings.isDiagnosticModeEnable)
@@ -295,20 +294,20 @@ namespace myfoodapp.Core.Business
 
                         lg.AppendLog(Log.CreateLog(String.Format("Measures captured in {0} sec.", watchMesures.ElapsedMilliseconds / 1000), LogType.System));  
                         
-                        if(userSettings.isSigFoxComEnable && sigfoxManager.isInitialized && TICKSPERCYCLE >= 600000)
+                        if(userSettings.connectivityType == ConnectivityType.Sigfox && sigfoxManager.isInitialized && TICKSPERCYCLE >= 600000)
                         {
                             watchMesures.Restart();
 
                             Task.Run(async () =>
                             {
-                                sigfoxManager.SendMessage(sigFoxSignature.ToString());
+                                sigfoxManager.SendMessage(sigFoxSignature.ToString(), userSettings.sigfoxVersion);
                                 await Task.Delay(2000);    
                             }).Wait();
 
                             lg.AppendLog(Log.CreateLog(String.Format("Data sent to Azure via Sigfox in {0} sec.", watchMesures.ElapsedMilliseconds / 1000), LogType.System));
                         }
 
-                        if (!userSettings.isSigFoxComEnable && NetworkInterface.GetIsNetworkAvailable())
+                        if (userSettings.connectivityType == ConnectivityType.Wifi && NetworkInterface.GetIsNetworkAvailable())
                         {
                             using (var client = new HttpClient())
                             {
@@ -348,7 +347,7 @@ namespace myfoodapp.Core.Business
                 catch (Exception ex)
                 {
                     lg.AppendLog(Log.CreateErrorLog("Exception on Measures", ex));
-                    sigfoxManager.SendMessage("CCCCCCCCCCCCCCCCCCCCCCCC");
+                    sigfoxManager.SendMessage("CCCCCCCCCCCCCCCCCCCCCCCC", userSettings.sigfoxVersion);
                 }
             }
             watch.Stop();

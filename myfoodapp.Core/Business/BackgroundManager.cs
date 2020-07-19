@@ -72,7 +72,7 @@ namespace myfoodapp.Core.Business
 
             var sg = SigfoxInterfaceManager.GetInstance;
             sg.InitInterface();
-            sg.SendMessage("00730285AAAAAAAA02410914");
+            sg.SendMessage("00730285AAAAAAAA02410914", SigfoxVersion.v2);
 
             var atls = AtlasSensorManager.GetInstance;
             atls.InitSensors(false);
@@ -109,7 +109,7 @@ namespace myfoodapp.Core.Business
             
             Console.WriteLine(rslt.Count);
 
-            UserSettingsModel mod = UserSettingsModel.GetInstance;
+            UserSettingsManager mod = UserSettingsManager.GetInstance;
             
             var tt = mod.GetUserSettings();
             Console.WriteLine(tt.hubMessageAPI);

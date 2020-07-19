@@ -75,11 +75,7 @@ namespace myfoodapp.Core.Business
 
                 serialPort.WriteLine(isOnlineATCommand);  
 
-                var tsk = Task.Run(async () =>
-                {
-                await Task.Delay(1000);
-                });
-                tsk.Wait();
+                Task.Delay(1000).Wait();
 
                 strStatus = serialPort.ReadExisting();
 
@@ -99,22 +95,19 @@ namespace myfoodapp.Core.Business
             }
         }
 
-        public void SendMessage(string message)
+        public void SendMessage(string message, SigfoxVersion version)
         {
             if (!isInitialized)
                 return;
 
                 //string strResult = String.Empty;
 
-                serialPort.WriteLine(String.Format(sendMessageATCommandv2, message));
+                if(version == SigfoxVersion.v1)
+                    serialPort.WriteLine(String.Format(sendMessageATCommandv1, message));
+                else
+                    serialPort.WriteLine(String.Format(sendMessageATCommandv2, message));
 
-                var tsk = Task.Run(async () =>
-                {
-                await Task.Delay(1000);
-                });
-                tsk.Wait();
-
-                //strResult = serialPort.ReadExisting();
+                Task.Delay(1000).Wait();
 
                //Console.WriteLine(strResult);
         }

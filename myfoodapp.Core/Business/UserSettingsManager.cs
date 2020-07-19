@@ -6,27 +6,27 @@ using System.Text.Json;
 
 namespace myfoodapp.Core.Business
 {
-    public class UserSettingsModel
+    public class UserSettingsManager
     {
         private static readonly AsyncLock asyncLock = new AsyncLock();
         private string FILE_NAME = "user.json";
-        private static UserSettingsModel instance;
+        private static UserSettingsManager instance;
         private LogManager lg = LogManager.GetInstance;
         public static UserSettings CurrentUserSettings = new UserSettings();
 
-        public static UserSettingsModel GetInstance
+        public static UserSettingsManager GetInstance
         {
             get
             {
                 if (instance == null)
                 {
-                    instance = new UserSettingsModel();
+                    instance = new UserSettingsManager();
                 }
                 return instance;
             }
         }
 
-        private UserSettingsModel()
+        private UserSettingsManager()
         {
             this.InitFileFolder();
         }
@@ -41,8 +41,6 @@ namespace myfoodapp.Core.Business
                     var defaultUserSettings = new UserSettings()
                     {
                         isDebugLedEnable = true,
-                        isScreenSaverEnable = false,
-                        isSigFoxComEnable = false,
                         isSleepModeEnable = false,
                         isTempHumiditySensorEnable = true,
                         isDiagnosticModeEnable = false,
@@ -50,7 +48,9 @@ namespace myfoodapp.Core.Business
                         productionSiteId = "XXXXX",
                         hubMessageAPI = "https://hub.myfood.eu/api/Messages",
                         SSID = "MYFOODPI_AP",
-                        ACCESS_POINT_PWD = "myfoodpi"
+                        ACCESS_POINT_PWD = "myfoodpi",
+                        connectivityType = ConnectivityType.Sigfox,
+                        sigfoxVersion = SigfoxVersion.v2
                     };
 #endif
 
@@ -58,16 +58,16 @@ namespace myfoodapp.Core.Business
                     var defaultUserSettings = new UserSettings()
                     {
                         isDebugLedEnable = false,
-                        isScreenSaverEnable = false,
-                        isSigFoxComEnable = false,
                         isSleepModeEnable = false,
-                        isTempHumiditySensorEnable = false,
+                        isTempHumiditySensorEnable = true,
                         isDiagnosticModeEnable = false,
                         measureFrequency = 1800000,
                         productionSiteId = "XXXXX",
                         hubMessageAPI = "https://hub.myfood.eu/api/Messages",
                         SSID = "MYFOODPI_AP",
                         ACCESS_POINT_PWD = "myfoodpi"
+                        connectivityType = ConnectivityType.Sigfox,
+                        sigfoxVersion = SigfoxVersion.v2
                     };
 #endif
 
@@ -79,8 +79,7 @@ namespace myfoodapp.Core.Business
                     
                     strSettings = JsonSerializer.Serialize(defaultUserSettings, options);
 
-                    File.WriteAllText(FILE_NAME, strSettings);
-                   
+                    File.WriteAllText(FILE_NAME, strSettings);              
                 }
             }
             catch (Exception ex)
@@ -127,9 +126,7 @@ namespace myfoodapp.Core.Business
     public class UserSettings
     {
         public bool isDebugLedEnable { get; set; }
-        public bool isScreenSaverEnable { get; set; }
         public bool isSleepModeEnable { get; set; }
-        public bool isSigFoxComEnable { get; set; }
         public bool isDiagnosticModeEnable { get; set; }
         public bool isTempHumiditySensorEnable { get; set; }
         public int measureFrequency { get; set; }
@@ -137,6 +134,20 @@ namespace myfoodapp.Core.Business
         public string hubMessageAPI { get; set; }
         public string SSID { get; set; }
         public string ACCESS_POINT_PWD { get; set; }
-        public string PackageVersion { get; set; }
+        public ConnectivityType connectivityType { get; set; }
+        public SigfoxVersion sigfoxVersion { get; set; }
+
+    }
+
+    public enum ConnectivityType
+    {
+        Wifi,
+        Sigfox
+    }
+
+    public enum SigfoxVersion
+    {
+        v1,
+        v2
     }
 }

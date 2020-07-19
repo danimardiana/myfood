@@ -6,40 +6,47 @@ Configure your local parameters.
 <div class="col-md-6">
 
         <h4>Enable Connectivity</h4>
-        <RadzenSelectBar @bind-Value="value" TValue="int" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
+        <RadzenSelectBar @bind-Value="isSigfoxConnectivityType" TValue="bool" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
             <Items>
-                <RadzenSelectBarItem Text="SIGFOX v.1" Value="1"/>
-                <RadzenSelectBarItem Text="SIGFOX v.2" Value="2" />
-                <RadzenSelectBarItem Text="WIFI MODE" Value="3"/>
+                <RadzenSelectBarItem Text="SIGFOX" Value="true" />
+                <RadzenSelectBarItem Text="WIFI" Value="false" />
+            </Items>
+        </RadzenSelectBar>
+
+        <h4>Sigfox Hardware Version</h4>
+        <RadzenSelectBar @bind-Value="isSigfoxVersionOne" TValue="bool" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
+            <Items>
+                <RadzenSelectBarItem Text="v.1" Value="true" />
+                <RadzenSelectBarItem Text="v.2" Value="false" />
             </Items>
         </RadzenSelectBar>
 
         <h4>Debug LEDs</h4>
-        <RadzenSelectBar @bind-Value="value" TValue="int" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
+        <RadzenSelectBar @bind-Value="userSettings.isDebugLedEnable" TValue="bool" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
             <Items>
-                <RadzenSelectBarItem Text="ON" Value="1" />
-                <RadzenSelectBarItem Text="OFF" Value="2" />
+                <RadzenSelectBarItem Text="ON" Value="true" />
+                <RadzenSelectBarItem Text="OFF" Value="false" />
             </Items>
         </RadzenSelectBar>
 
         <h4>Diagnostic Mode</h4>
-        <RadzenSelectBar @bind-Value="value" TValue="int" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
+        <RadzenSelectBar @bind-Value="userSettings.isDiagnosticModeEnable" TValue="bool" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
             <Items>
-                <RadzenSelectBarItem Text="ON" Value="1" />
-                <RadzenSelectBarItem Text="OFF" Value="2" />
+                <RadzenSelectBarItem Text="ON" Value="true" />
+                <RadzenSelectBarItem Text="OFF" Value="false" />
             </Items>
         </RadzenSelectBar>
 
         <h4>Air Temperature | Humidity sensor</h4>
-        <RadzenSelectBar @bind-Value="value" TValue="int" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
+        <RadzenSelectBar @bind-Value="userSettings.isTempHumiditySensorEnable" TValue="bool" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
             <Items>
-                <RadzenSelectBarItem Text="ON" Value="1" />
-                <RadzenSelectBarItem Text="OFF" Value="2" />
+                <RadzenSelectBarItem Text="ON" Value="true" />
+                <RadzenSelectBarItem Text="OFF" Value="false" />
             </Items>
         </RadzenSelectBar>
         
         <br/>
-        <RadzenButton Click="@((args) => Click(args, "Button with text"))" Text="Save Settings" style="width:100%; margin:40px"/>
+        <RadzenButton Click="@((args) => SaveSettingsClick(args))" Text="Save Settings" style="width:100%; margin:40px"/>
 </div>
 
 <div class="col-md-6">
@@ -48,34 +55,59 @@ Configure your local parameters.
 
     <RadzenDatePicker TValue="DateTime?" ShowTime="true" ShowSeconds="true" HoursStep="1.5" MinutesStep="5" SecondsStep="10" Change="@(args => Change(args, "DatePicker with time", "MM/dd/yyyy HH:mm"))" DateFormat="MM/dd/yyyy HH:mm" />
 
-    <RadzenButton Click="@((args) => Click(args, "Button with text"))" Text="Set Internal Clock" style="width:100%; margin:40px"/>
+    <RadzenButton Click="@((args) => SetInternalClockClick(args))" Text="Save Settings" style="width:100%; margin:40px"/>
 </div>
 
 @code {
-    int value = 0;
+    bool isSigfoxConnectivityType = false;
+    bool isSigfoxVersionOne = false;
 
     DateTime dateTimeValue = DateTime.Now;
-    IEnumerable<int> values = new int[] { 1, 2 };
+    UserSettings userSettings = new UserSettings();
 
-    Dictionary<DateTime, string> events = new Dictionary<DateTime, string>();
+    UserSettingsManager userSettingsManager = UserSettingsManager.GetInstance;
+    ClockManager clockManager = ClockManager.GetInstance;
+
+    protected override void OnInitialized()
+    {  
+        userSettings = userSettingsManager.GetUserSettings();
+
+        isSigfoxConnectivityType = (userSettings.connectivityType == ConnectivityType.Sigfox) ? true : false;
+        isSigfoxVersionOne = (userSettings.sigfoxVersion == SigfoxVersion.v1) ? true : false;
+    
+        if (clockManager != null)
+        {
+            Task.Run(async() => 
+            {
+                clockManager.InitClock();
+                await Task.Delay(2000);
+                dateTimeValue = clockManager.ReadDate();
+                clockManager.Dispose();
+            }).Wait();               
+        }
+    }
 
     void Change(object value, string name)
     {
         var str = value is IEnumerable<int> ? string.Join(", ", (IEnumerable<int>)value) : value;
-        events.Add(DateTime.Now, $"{name} value changed to {str}");
         StateHasChanged();
     }
 
-    void Click(MouseEventArgs args, string buttonName)
+    void SaveSettingsClick(MouseEventArgs args)
     {
-        events.Add(DateTime.Now, $"{buttonName} clicked");
+        userSettings.connectivityType = (isSigfoxConnectivityType == true) ? ConnectivityType.Sigfox : ConnectivityType.Wifi;
+        userSettings.sigfoxVersion = (isSigfoxVersionOne == true) ? SigfoxVersion.v1 : SigfoxVersion.v2;
+        userSettingsManager.SyncUserSettings(userSettings);
+        StateHasChanged();
+    }
+
+    void SetInternalClockClick(MouseEventArgs args)
+    {
         StateHasChanged();
     }
 
     void Change(DateTime? value, string name, string format)
     {
-        events.Add(DateTime.Now, $"{name} value changed to {value?.ToString(format)}");
         StateHasChanged();
     }
-
 }

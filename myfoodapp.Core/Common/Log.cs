@@ -3,12 +3,12 @@ using System;
 namespace myfoodapp.Core.Common
 {
     public enum LogType
-        {
-            Information,
-            Warning,
-            System,
-            Error
-        }
+    {
+        Information,
+        Warning,
+        System,
+        Error
+    }
 
     public class Log
     {        

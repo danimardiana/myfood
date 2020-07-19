@@ -180,4 +180,9 @@ app {
         /* Never collapse the sidebar for wide screens */
         display: block;
     }
+
+    .ui-selectbutton .ui-button.ui-state-active, .ui-selectbutton .ui-state-active.ui-paginator-element
+    {
+        background-color: #2ea636 !important;
+    }
 }
