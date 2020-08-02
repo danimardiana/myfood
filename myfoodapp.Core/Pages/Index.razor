@@ -1,73 +1,77 @@
 ﻿@page "/"
 
-<h1>Settings</h1>
-Configure your local parameters.
+<div class="container" style="padding: 20px;">
+    <div class="row">
+        <div class="col">
+            <h1>Settings</h1>
+            Configure your local parameters.
 
-<div class="col-md-6">
+                <h4>Enable Connectivity (ProdUnitId = @userSettings.productionSiteId) </h4>
+                <RadzenSelectBar @bind-Value="isSigfoxConnectivityType" TValue="bool" Style="margin-bottom: 20px;">
+                    <Items>
+                        <RadzenSelectBarItem Text="SIGFOX" Value="true" />
+                        <RadzenSelectBarItem Text="WIFI" Value="false" />
+                    </Items>
+                </RadzenSelectBar>
 
-        <h4>Enable Connectivity</h4>
-        <RadzenSelectBar @bind-Value="isSigfoxConnectivityType" TValue="bool" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
-            <Items>
-                <RadzenSelectBarItem Text="SIGFOX" Value="true" />
-                <RadzenSelectBarItem Text="WIFI" Value="false" />
-            </Items>
-        </RadzenSelectBar>
+                <h4>Sigfox Hardware Version</h4>
+                <RadzenSelectBar @bind-Value="isSigfoxVersionOne" TValue="bool" Style="margin-bottom: 20px;">
+                    <Items>
+                        <RadzenSelectBarItem Text="v.1" Value="true" />
+                        <RadzenSelectBarItem Text="v.2" Value="false" />
+                    </Items>
+                </RadzenSelectBar>
 
-        <h4>Sigfox Hardware Version</h4>
-        <RadzenSelectBar @bind-Value="isSigfoxVersionOne" TValue="bool" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
-            <Items>
-                <RadzenSelectBarItem Text="v.1" Value="true" />
-                <RadzenSelectBarItem Text="v.2" Value="false" />
-            </Items>
-        </RadzenSelectBar>
+                <h4>Debug LEDs</h4>
+                <RadzenSelectBar @bind-Value="userSettings.isDebugLedEnable" TValue="bool" Style="margin-bottom: 20px;">
+                    <Items>
+                        <RadzenSelectBarItem Text="ON" Value="true" />
+                        <RadzenSelectBarItem Text="OFF" Value="false" />
+                    </Items>
+                </RadzenSelectBar>
 
-        <h4>Debug LEDs</h4>
-        <RadzenSelectBar @bind-Value="userSettings.isDebugLedEnable" TValue="bool" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
-            <Items>
-                <RadzenSelectBarItem Text="ON" Value="true" />
-                <RadzenSelectBarItem Text="OFF" Value="false" />
-            </Items>
-        </RadzenSelectBar>
+                <h4>Diagnostic Mode</h4>
+                <RadzenSelectBar @bind-Value="userSettings.isDiagnosticModeEnable" TValue="bool" Style="margin-bottom: 20px;">
+                    <Items>
+                        <RadzenSelectBarItem Text="ON" Value="true" />
+                        <RadzenSelectBarItem Text="OFF" Value="false" />
+                    </Items>
+                </RadzenSelectBar>
 
-        <h4>Diagnostic Mode</h4>
-        <RadzenSelectBar @bind-Value="userSettings.isDiagnosticModeEnable" TValue="bool" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
-            <Items>
-                <RadzenSelectBarItem Text="ON" Value="true" />
-                <RadzenSelectBarItem Text="OFF" Value="false" />
-            </Items>
-        </RadzenSelectBar>
+                <h4>Air Temperature | Humidity sensor</h4>
+                <RadzenSelectBar @bind-Value="userSettings.isTempHumiditySensorEnable" TValue="bool"  Style="margin-bottom: 20px;">
+                    <Items>
+                        <RadzenSelectBarItem Text="ON" Value="true" />
+                        <RadzenSelectBarItem Text="OFF" Value="false" />
+                    </Items>
+                </RadzenSelectBar>
+                
+                <br/>
+                <RadzenButton Click="@((args) => SaveSettingsClick(args))" Text="Save Settings" style="width:100%; margin:40px"/>
 
-        <h4>Air Temperature | Humidity sensor</h4>
-        <RadzenSelectBar @bind-Value="userSettings.isTempHumiditySensorEnable" TValue="bool" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
-            <Items>
-                <RadzenSelectBarItem Text="ON" Value="true" />
-                <RadzenSelectBarItem Text="OFF" Value="false" />
-            </Items>
-        </RadzenSelectBar>
-        
-        <br/>
-        <RadzenButton Click="@((args) => SaveSettingsClick(args))" Text="Save Settings" style="width:100%; margin:40px"/>
-</div>
+                <h4>Set Internal Clock</h4>
+                Current Clock : @dateTimeValue
 
-<div class="col-md-6">
-    <h4>Set Internal Clock</h4>
-    Current Clock : @dateTimeValue
+                <RadzenDatePicker TValue="DateTime?" @bind-Value="dateTimeValue" ShowTime="true" ShowSeconds="true" HoursStep="1" MinutesStep="10" SecondsStep="10" DateFormat="MM/dd/yyyy HH:mm" />
 
-    <RadzenDatePicker TValue="DateTime?" ShowTime="true" ShowSeconds="true" HoursStep="1.5" MinutesStep="5" SecondsStep="10" Change="@(args => Change(args, "DatePicker with time", "MM/dd/yyyy HH:mm"))" DateFormat="MM/dd/yyyy HH:mm" />
+                <RadzenButton Click="@((args) => SetInternalClockClick(args))" Text="Save Settings" style="width:100%; margin:40px"/>
+        </div>
 
-    <RadzenButton Click="@((args) => SetInternalClockClick(args))" Text="Save Settings" style="width:100%; margin:40px"/>
+        <div class="col">
+            <h1>Admin Console</h1>
+
+            <RadzenButton Click="@((args) => SetPHCalibrationClick(args))" Text="Set PH Calibration to 7" style="width:100%; margin:40px"/>
+        </div>
+    </div>
 </div>
 
 @code {
     bool isSigfoxConnectivityType = false;
     bool isSigfoxVersionOne = false;
-
-    DateTime dateTimeValue = DateTime.Now;
+    DateTime? dateTimeValue = DateTime.Now;
     UserSettings userSettings = new UserSettings();
-
     UserSettingsManager userSettingsManager = UserSettingsManager.GetInstance;
     ClockManager clockManager = ClockManager.GetInstance;
-
     protected override void OnInitialized()
     {  
         userSettings = userSettingsManager.GetUserSettings();
@@ -87,27 +91,112 @@ Configure your local parameters.
         }
     }
 
-    void Change(object value, string name)
-    {
-        var str = value is IEnumerable<int> ? string.Join(", ", (IEnumerable<int>)value) : value;
-        StateHasChanged();
-    }
-
     void SaveSettingsClick(MouseEventArgs args)
     {
-        userSettings.connectivityType = (isSigfoxConnectivityType == true) ? ConnectivityType.Sigfox : ConnectivityType.Wifi;
-        userSettings.sigfoxVersion = (isSigfoxVersionOne == true) ? SigfoxVersion.v1 : SigfoxVersion.v2;
-        userSettingsManager.SyncUserSettings(userSettings);
+        var mesureBackgroundTask = MeasureBackgroundTask.GetInstance;
+
+        var lg = LogManager.GetInstance;
+
+        EventHandler handler = null;
+
+        handler = (sender, eventArgs) =>
+        {
+            mesureBackgroundTask.Completed -= handler;
+
+            try
+            {
+                userSettings.connectivityType = (isSigfoxConnectivityType == true) ? ConnectivityType.Sigfox : ConnectivityType.Wifi;
+                userSettings.sigfoxVersion = (isSigfoxVersionOne == true) ? SigfoxVersion.v1 : SigfoxVersion.v2;
+                userSettingsManager.SyncUserSettings(userSettings);
+
+                mesureBackgroundTask.Run();
+            }
+            catch (Exception ex)
+            {
+                lg.AppendLog(Log.CreateErrorLog("Exception on Save Settings", ex));
+            }
+            finally
+            {
+                lg.AppendLog(Log.CreateLog("Settings saved", LogType.Information));
+            }
+        };
+
+        mesureBackgroundTask.Completed += handler;
+        mesureBackgroundTask.Stop();
+        
         StateHasChanged();
     }
 
     void SetInternalClockClick(MouseEventArgs args)
     {
+        var mesureBackgroundTask = MeasureBackgroundTask.GetInstance;
+        var lg = LogManager.GetInstance;
+            
+        EventHandler handler = null;
+
+        handler = (sender, eventArgs) =>
+        {
+            mesureBackgroundTask.Completed -= handler;
+            try
+            {
+                var clockManager = ClockManager.GetInstance;
+
+                if (clockManager != null && dateTimeValue.HasValue)
+                {
+                    clockManager.InitClock();
+                    clockManager.SetDate(dateTimeValue.Value);
+                    clockManager.Dispose();
+                }
+
+                mesureBackgroundTask.Run();
+
+            }
+            catch (Exception ex)
+            {
+                lg.AppendLog(Log.CreateErrorLog("Exception on Clock Settings", ex));
+            }
+            finally
+            {
+                lg.AppendLog(Log.CreateLog("Clock setting ended", LogType.Information));
+            }
+        };
+
+        mesureBackgroundTask.Completed += handler;
+        mesureBackgroundTask.Stop();
+
         StateHasChanged();
     }
 
-    void Change(DateTime? value, string name, string format)
+    void SetPHCalibrationClick(MouseEventArgs args)
     {
+        var logModel = LogManager.GetInstance;
+        logModel.AppendLog(Log.CreateLog("Set pH to 7 started", LogType.Information));
+
+        var mesureBackgroundTask = MeasureBackgroundTask.GetInstance;
+        mesureBackgroundTask.Completed += SetPhAtSevenBackgroundTask_Completed;
+        mesureBackgroundTask.Stop();
+
         StateHasChanged();
     }
+
+    private void SetPhAtSevenBackgroundTask_Completed(object sender, EventArgs e)
+        {
+            var lg = LogManager.GetInstance;
+            var mesureBackgroundTask = MeasureBackgroundTask.GetInstance;
+            mesureBackgroundTask.Completed -= SetPhAtSevenBackgroundTask_Completed;
+
+            try
+            {
+                AtlasSensorManager.GetInstance.SetCalibration(SensorTypeEnum.pH, AtlasSensorManager.CalibrationType.Mid);
+                mesureBackgroundTask.Run();
+            }
+            catch (Exception ex)
+            {
+                lg.AppendLog(Log.CreateErrorLog("Exception on Set PH to 7", ex));
+            }
+            finally
+            {
+                lg.AppendLog(Log.CreateLog("Set PH to 7 ended", LogType.Information));
+            }
+        }
 }

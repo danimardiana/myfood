@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using myfoodapp.Core.Common;
 using myfoodapp.Core.Model;
 using System.Threading.Tasks;
+using System.Net.Http;
 using System.Net.NetworkInformation;
+using System.Text.Json;
+using System.Text;
 
 namespace myfoodapp.Core.Business
 {
@@ -19,7 +22,7 @@ namespace myfoodapp.Core.Business
 
             decimal capt = 0;
 
-            for(int i = 0; i < 10; i++)
+            for(int i = 0; i < 2; i++)
             {
                 Task.Run(async() => 
                     {  
@@ -84,8 +87,14 @@ namespace myfoodapp.Core.Business
             
             try 
             {
-                var tt3 = "sudo /opt/vc/bin/vcgencmd measure_temp".Bash();
-                Console.WriteLine(tt1);
+                var rslt3 = "sudo /opt/vc/bin/vcgencmd measure_temp".Bash();
+                Console.WriteLine(rslt3.Substring(5,2));
+                rslt3 = rslt3.Substring(5,2);
+                
+                StringBuilder rslt2 = new StringBuilder("EEEE");
+                rslt2[2] = rslt3[0];
+                rslt2[3] = rslt3[1];
+                Console.WriteLine(rslt2.ToString());
 
                 var tt2 = "sudo iwlist wlan0 scanning | grep ESSID".Bash();
                 Console.WriteLine(tt2);
@@ -113,6 +122,41 @@ namespace myfoodapp.Core.Business
             
             var tt = mod.GetUserSettings();
             Console.WriteLine(tt.hubMessageAPI);
+
+            using (var client = new HttpClient())
+                {
+                    var request = new Message()
+                    {
+                        content = "XXXXXXXXXXXX",
+                        device = "DDDDDD",
+                        date = "01-01-2020",
+                        data = "Wifi"
+                    };
+
+                    var taskWeb = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var response = await client.PostAsync("https://hub.myfood.eu/api/Messages/",
+                            new StringContent(JsonSerializer.Serialize(request),
+                            Encoding.UTF8, "application/json"));
+
+                            Console.WriteLine(response.ReasonPhrase);
+                            Console.WriteLine(response.Content);
+
+                            if (response.IsSuccessStatusCode)
+                            {
+                                //lg.AppendLog(Log.CreateLog("Measures sent to Azure via Internet", LogType.Information));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            //lg.AppendLog(Log.CreateErrorLog("Exception on Measures to Azure", ex));
+                        }
+                    });
+
+                    taskWeb.Wait();           
+                }
 
         }
 

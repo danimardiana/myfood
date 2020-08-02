@@ -58,5 +58,6 @@ namespace myfoodapp.Core.Model
             public string content { get; set; }
             public string device { get; set; }
             public string date { get; set; }
+            public string data { get; set; }
         }
 }

@@ -429,8 +429,8 @@ namespace myfoodapp.Core.Business
 
             if (currentSensor != null)
             {
-                decimal capturedMesure = 0;
-                string strResult = String.Empty;
+                StringBuilder strResult = new StringBuilder();
+                decimal sumCapturedMesure = 0;
 
                 //if (isSleepModeActivated)
                 //{
@@ -444,15 +444,23 @@ namespace myfoodapp.Core.Business
                 //    taskWakeUp.Wait();
                 //}
 
-                var tsk = Task.Run(async() =>
+                for (int i = 0; i < 4; i++)
                 {
-                    strResult = await SendCommand(currentSensor.currentSerialPort, readValueCommand);
-                    var boolMeasure = Decimal.TryParse(strResult.Replace("\r", "")
-                                                               .Replace(answersSleepMode, "")
-                                                               .Replace(answersWakeUpMode, "")
-                                                               ,out capturedMesure);
-                });
-                tsk.Wait();
+                    Task.Run(async() =>
+                    {
+                        var str = await SendCommand(currentSensor.currentSerialPort, readValueCommand);
+                        strResult.Append(str);
+                    }).Wait();
+
+                    decimal capturedMesure = 0;
+                    var boolMeasure = Decimal.TryParse(strResult.ToString().Replace("\r", "")
+                                                            .Replace(answersSleepMode, "")
+                                                            .Replace(answersWakeUpMode, "")
+                                                            ,out capturedMesure);
+
+                    sumCapturedMesure += capturedMesure;
+                    strResult.Clear();          
+                }
 
                 //if (isSleepModeActivated)
                 //{
@@ -464,7 +472,7 @@ namespace myfoodapp.Core.Business
                 //    taskSleep.Wait();
                 //}
 
-                return capturedMesure;
+                return sumCapturedMesure / 4;
             }
             return 0;
         }
@@ -491,13 +499,12 @@ namespace myfoodapp.Core.Business
 
                 for (int i = 0; i < 4; i++)
                 {
-                    var tsk = Task.Run(async() =>
+                    Task.Run(async() =>
                     {
                         var str = await SendCommand(phSensor.currentSerialPort, readValueCommand);
                         strResult.Append(str);
-                    });
-                    tsk.Wait();
-
+                    }).Wait();
+                    
                     decimal capturedMesure = 0;
 
                     var boolMeasure_1 = Decimal.TryParse(strResult.ToString().Replace("\r", "")

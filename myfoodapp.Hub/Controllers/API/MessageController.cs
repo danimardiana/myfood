@@ -38,9 +38,7 @@ namespace myfoodapp.Hub.Controllers.Api
             try
             {
                 var measureType = db.MessageTypes.Where(m => m.Id == 1).FirstOrDefault();
-
                 db.Messages.Add(new Message() { content = content, device = device, date = date, messageType = measureType });
-                db.SaveChanges();
             }
             catch (Exception ex)
             {
@@ -61,6 +59,7 @@ namespace myfoodapp.Hub.Controllers.Api
                 {
                     db.Logs.Add(Log.CreateLog(String.Format("Production Unit not found - {0}", device), Log.LogType.Warning));
                     db.SaveChanges();
+                    return;
                 }
 
                 var infoEventType = db.EventTypes.Where(p => p.Id == 8).FirstOrDefault();
@@ -130,9 +129,7 @@ namespace myfoodapp.Hub.Controllers.Api
                     if(decimal.TryParse(phContent, style, culture, out pHvalue))
                     {
                         currentMeasures.pHvalue = pHvalue;
-
                         db.Measures.Add(new Measure() { captureDate = date, productionUnit = currentProductionUnit, sensor = phSensor, value = pHvalue });
-                        db.SaveChanges();
                     }
                     else
                     {
@@ -147,9 +144,7 @@ namespace myfoodapp.Hub.Controllers.Api
                     if (decimal.TryParse(waterTempContent, style, culture, out waterTempvalue))
                     {
                         currentMeasures.waterTempvalue = waterTempvalue;
-
                         db.Measures.Add(new Measure() { captureDate = date, productionUnit = currentProductionUnit, sensor = waterTemperatureSensor, value = waterTempvalue });
-                        db.SaveChanges();
                     }
                     else
                     {
@@ -164,9 +159,7 @@ namespace myfoodapp.Hub.Controllers.Api
                     if (decimal.TryParse(dissolvedOxyContent, style, culture, out DOvalue))
                     {
                         currentMeasures.DOvalue = DOvalue;
-
                         db.Measures.Add(new Measure() { captureDate = date, productionUnit = currentProductionUnit, sensor = dissolvedOxySensor, value = DOvalue });
-                        db.SaveChanges();
                     }
                     else
                     {
@@ -181,9 +174,7 @@ namespace myfoodapp.Hub.Controllers.Api
                     if (decimal.TryParse(orpContent, style, culture, out ORPvalue))
                     {
                         currentMeasures.ORPvalue = ORPvalue;
-
                         db.Measures.Add(new Measure() { captureDate = date, productionUnit = currentProductionUnit, sensor = ORPSensor, value = ORPvalue });
-                        db.SaveChanges();
                     }
                     else
                     {
@@ -198,9 +189,7 @@ namespace myfoodapp.Hub.Controllers.Api
                     if (decimal.TryParse(airTempContent, style, culture, out airTempvalue))
                     {
                         currentMeasures.airTempvalue = airTempvalue;
-
                         db.Measures.Add(new Measure() { captureDate = date, productionUnit = currentProductionUnit, sensor = airTemperatureSensor, value = airTempvalue });
-                        db.SaveChanges();
                     }
                     else
                     {
@@ -215,9 +204,7 @@ namespace myfoodapp.Hub.Controllers.Api
                     if (decimal.TryParse(airHumidityContent, style, culture, out humidityvalue))
                     {
                         currentMeasures.humidityvalue = humidityvalue;
-
                         db.Measures.Add(new Measure() { captureDate = date, productionUnit = currentProductionUnit, sensor = airHumidity, value = humidityvalue });
-                        db.SaveChanges();
                     }
                     else
                     {
@@ -227,6 +214,16 @@ namespace myfoodapp.Hub.Controllers.Api
                 }
 
                 ExternalAirHumidityManager.GetExternalAirHumidityValues(currentProductionUnit.Id, date);
+
+                try
+                {
+                    db.SaveChanges();
+                }
+                catch (Exception ex)
+                {
+                    dbLog.Logs.Add(Log.CreateErrorLog("Error on Saving Measure and Message", ex));
+                    dbLog.SaveChanges();
+                }
 
             }
             catch (Exception ex)

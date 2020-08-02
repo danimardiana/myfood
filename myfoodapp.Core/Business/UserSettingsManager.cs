@@ -1,4 +1,3 @@
-
 using myfoodapp.Core.Common;
 using System;
 using System.IO;
@@ -37,18 +36,18 @@ namespace myfoodapp.Core.Business
             {
                 if (!File.Exists(FILE_NAME))
                 {
+                    var uniqueProductionSiteId = Guid.NewGuid().ToString().Substring(0,8).ToUpper();
+
 #if DEBUG
                     var defaultUserSettings = new UserSettings()
                     {
-                        isDebugLedEnable = true,
+                        isDebugLedEnable = false,
                         isSleepModeEnable = false,
                         isTempHumiditySensorEnable = true,
                         isDiagnosticModeEnable = false,
-                        measureFrequency = 60000,
-                        productionSiteId = "XXXXX",
+                        measureFrequency = 1800000,
+                        productionSiteId = uniqueProductionSiteId,
                         hubMessageAPI = "https://hub.myfood.eu/api/Messages",
-                        SSID = "MYFOODPI_AP",
-                        ACCESS_POINT_PWD = "myfoodpi",
                         connectivityType = ConnectivityType.Sigfox,
                         sigfoxVersion = SigfoxVersion.v2
                     };
@@ -62,10 +61,8 @@ namespace myfoodapp.Core.Business
                         isTempHumiditySensorEnable = true,
                         isDiagnosticModeEnable = false,
                         measureFrequency = 1800000,
-                        productionSiteId = "XXXXX",
+                        productionSiteId = uniqueProductionSiteId,
                         hubMessageAPI = "https://hub.myfood.eu/api/Messages",
-                        SSID = "MYFOODPI_AP",
-                        ACCESS_POINT_PWD = "myfoodpi"
                         connectivityType = ConnectivityType.Sigfox,
                         sigfoxVersion = SigfoxVersion.v2
                     };
@@ -132,8 +129,6 @@ namespace myfoodapp.Core.Business
         public int measureFrequency { get; set; }
         public string productionSiteId { get; set; }
         public string hubMessageAPI { get; set; }
-        public string SSID { get; set; }
-        public string ACCESS_POINT_PWD { get; set; }
         public ConnectivityType connectivityType { get; set; }
         public SigfoxVersion sigfoxVersion { get; set; }
 

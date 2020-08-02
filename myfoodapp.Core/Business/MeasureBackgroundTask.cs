@@ -3,11 +3,9 @@ using myfoodapp.Core.Model;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
-using System.Text.Json;
 
 namespace myfoodapp.Core.Business
 {
@@ -18,6 +16,7 @@ namespace myfoodapp.Core.Business
         private AtlasSensorManager sensorManager;
         private HumidityTemperatureManager humTempManager;
         private SigfoxInterfaceManager sigfoxManager;
+        private InternalTemperatureManager internalTemperatureManager;
         private UserSettings userSettings;
         private UserSettingsManager userSettingsManager = UserSettingsManager.GetInstance;
         private LogManager lg = LogManager.GetInstance;
@@ -56,7 +55,7 @@ namespace myfoodapp.Core.Business
             }
 
             bw.WorkerSupportsCancellation = true;
-            bw.WorkerReportsProgress = true;
+            bw.WorkerReportsProgress = false;
             bw.DoWork += Bw_DoWork;
             bw.RunWorkerCompleted += Bw_RunWorkerCompleted;
         }
@@ -83,7 +82,7 @@ namespace myfoodapp.Core.Business
         {
             var watch = Stopwatch.StartNew();
 
-            var sigFoxSignature = new StringBuilder("AAAAAAAAAAAAAAAAAAAAAAAA", 24);
+            var messageSignature = new StringBuilder("AAAAAAAAAAAAAAAAAAAAAAAA", 24);
 
             if (userSettings.measureFrequency >= 60000)
                 TICKSPERCYCLE = userSettings.measureFrequency;
@@ -110,8 +109,18 @@ namespace myfoodapp.Core.Business
             if(userSettings.connectivityType == ConnectivityType.Sigfox)
             {
                 sigfoxManager.InitInterface();
-                sigfoxManager.SendMessage(sigFoxSignature.ToString(), userSettings.sigfoxVersion);
+                sigfoxManager.SendMessage(messageSignature.ToString(), userSettings.sigfoxVersion);
             }
+
+            if (userSettings.connectivityType == ConnectivityType.Wifi && NetworkInterface.GetIsNetworkAvailable())
+            {
+                Task.Run(async () =>
+                {
+                    await HttpClientHelper.SendMessage(userSettings.hubMessageAPI, 
+                                                        messageSignature.ToString(), 
+                                                        userSettings.productionSiteId);
+                }).Wait();                                       
+            }  
 
             if (userSettings.isDiagnosticModeEnable)
             {
@@ -125,6 +134,9 @@ namespace myfoodapp.Core.Business
             sensorManager.SetDebugLedMode(userSettings.isDebugLedEnable);
 
             humTempManager = HumidityTemperatureManager.GetInstance;
+
+            internalTemperatureManager = InternalTemperatureManager.GetInstance;
+            
 
             if (userSettings.isTempHumiditySensorEnable)
             {
@@ -165,10 +177,10 @@ namespace myfoodapp.Core.Business
 
                                 if (capturedValue > 0 && capturedValue < 80)
                                 {
-                                    sigFoxSignature[4] = '0';
-                                    sigFoxSignature[5] = capturedValue.ToString()[0];
-                                    sigFoxSignature[6] = capturedValue.ToString()[1];
-                                    sigFoxSignature[7] = capturedValue.ToString()[3];
+                                    messageSignature[4] = '0';
+                                    messageSignature[5] = capturedValue.ToString()[0];
+                                    messageSignature[6] = capturedValue.ToString()[1];
+                                    messageSignature[7] = capturedValue.ToString()[3];
 
                                     if (!userSettings.isDiagnosticModeEnable)
                                     sensorManager.SetWaterTemperatureForPHSensor(capturedValue);
@@ -189,10 +201,10 @@ namespace myfoodapp.Core.Business
                                 else
                                 {
                                     lg.AppendLog(Log.CreateLog(String.Format("Water Temperature value out of range - {0}", capturedValue), LogType.Warning));
-                                    sigFoxSignature[4] = 'B';
-                                    sigFoxSignature[6] = 'B';
-                                    sigFoxSignature[7] = 'B';
-                                    sigFoxSignature[8] = 'B';
+                                    messageSignature[4] = 'B';
+                                    messageSignature[5] = 'B';
+                                    messageSignature[6] = 'B';
+                                    messageSignature[7] = 'B';
                                 }
                            }
 
@@ -206,10 +218,10 @@ namespace myfoodapp.Core.Business
 
                                 if (capturedValue > 1 && capturedValue < 12)
                                 {
-                                    sigFoxSignature[0] = '0';
-                                    sigFoxSignature[1] = '0';
-                                    sigFoxSignature[2] = capturedValue.ToString()[0];
-                                    sigFoxSignature[3] = capturedValue.ToString()[2];
+                                    messageSignature[0] = '0';
+                                    messageSignature[1] = '0';
+                                    messageSignature[2] = capturedValue.ToString()[0];
+                                    messageSignature[3] = capturedValue.ToString()[2];
 
                                     var task = Task.Run(async () =>
                                     {
@@ -227,10 +239,10 @@ namespace myfoodapp.Core.Business
                                 else
                                 {
                                     lg.AppendLog(Log.CreateLog(String.Format("PH value out of range - {0}", capturedValue), LogType.Warning));
-                                    sigFoxSignature[0] = 'B';
-                                    sigFoxSignature[1] = 'B';
-                                    sigFoxSignature[2] = 'B';
-                                    sigFoxSignature[3] = 'B';
+                                    messageSignature[0] = 'B';
+                                    messageSignature[1] = 'B';
+                                    messageSignature[2] = 'B';
+                                    messageSignature[3] = 'B';
                                 }
                             }
                             
@@ -249,28 +261,28 @@ namespace myfoodapp.Core.Business
                                             {
                                              await Task.Delay(1000);
                                              capturedValue = (decimal)humTempManager.Temperature;
-                                             Console.WriteLine(capturedValue);
+                                             Console.WriteLine("Temp" + capturedValue);
                                              await Task.Delay(1000);
                                              await databaseModel.AddMesure(captureDateTime, capturedValue, SensorTypeEnum.airTemperature);
                                             
-                                             sigFoxSignature[16] = '0';
-                                             sigFoxSignature[17] = capturedValue.ToString()[0];
-                                             sigFoxSignature[18] = capturedValue.ToString()[1];
-                                             sigFoxSignature[19] = capturedValue.ToString()[3];
+                                             messageSignature[16] = '0';
+                                             messageSignature[17] = capturedValue.ToString()[0];
+                                             messageSignature[18] = capturedValue.ToString()[1];
+                                             messageSignature[19] = capturedValue.ToString()[3];
 
                                              if (userSettings.isDiagnosticModeEnable)
                                                  lg.AppendLog(Log.CreateLog(String.Format("Air Temperature captured : {0}", capturedValue), LogType.Information));
                                              
                                              await Task.Delay(1000);
                                              capturedValue = (decimal)humTempManager.Humidity;
-                                             Console.WriteLine(capturedValue);
+                                             Console.WriteLine("Hum" + capturedValue);
                                              await Task.Delay(1000);    
                                              await databaseModel.AddMesure(captureDateTime, capturedValue, SensorTypeEnum.humidity);
 
-                                             sigFoxSignature[20] = '0';
-                                             sigFoxSignature[21] = capturedValue.ToString()[0];
-                                             sigFoxSignature[22] = capturedValue.ToString()[1];
-                                             sigFoxSignature[23] = capturedValue.ToString()[3];
+                                             messageSignature[20] = '0';
+                                             messageSignature[21] = capturedValue.ToString()[0];
+                                             messageSignature[22] = capturedValue.ToString()[1];
+                                             messageSignature[23] = capturedValue.ToString()[3];
 
                                              if (userSettings.isDiagnosticModeEnable)
                                                  lg.AppendLog(Log.CreateLog(String.Format("Air Humidity captured : {0}", capturedValue), LogType.Information));  
@@ -281,15 +293,32 @@ namespace myfoodapp.Core.Business
                                 catch (Exception ex)
                                 {
                                     lg.AppendLog(Log.CreateErrorLog("Exception on Air Temperature Humidity Sensor", ex));
-                                    sigFoxSignature[16] = 'C';
-                                    sigFoxSignature[17] = 'C';
-                                    sigFoxSignature[18] = 'C';
-                                    sigFoxSignature[19] = 'C';
-                                    sigFoxSignature[20] = 'C';
-                                    sigFoxSignature[21] = 'C';
-                                    sigFoxSignature[22] = 'C';
-                                    sigFoxSignature[23] = 'C';
+                                    messageSignature[16] = 'C';
+                                    messageSignature[17] = 'C';
+                                    messageSignature[18] = 'C';
+                                    messageSignature[19] = 'C';
+                                    messageSignature[20] = 'C';
+                                    messageSignature[21] = 'C';
+                                    messageSignature[22] = 'C';
+                                    messageSignature[23] = 'C';
                                 }
+                            }
+
+                            try
+                            {
+                                var temp = internalTemperatureManager.GetInternalTemperatureSignature(); 
+                                messageSignature[12] = temp[0];
+                                messageSignature[13] = temp[1];
+                                messageSignature[14] = temp[2];
+                                messageSignature[15] = temp[3];               
+                            }
+                            catch (Exception ex)
+                            {
+                                lg.AppendLog(Log.CreateErrorLog("Exception on Internal Temperature Sensor", ex));
+                                messageSignature[12] = 'C';
+                                messageSignature[13] = 'C';
+                                messageSignature[14] = 'C';
+                                messageSignature[15] = 'C'; 
                             }
 
                         lg.AppendLog(Log.CreateLog(String.Format("Measures captured in {0} sec.", watchMesures.ElapsedMilliseconds / 1000), LogType.System));  
@@ -300,7 +329,7 @@ namespace myfoodapp.Core.Business
 
                             Task.Run(async () =>
                             {
-                                sigfoxManager.SendMessage(sigFoxSignature.ToString(), userSettings.sigfoxVersion);
+                                sigfoxManager.SendMessage(messageSignature.ToString(), userSettings.sigfoxVersion);
                                 await Task.Delay(2000);    
                             }).Wait();
 
@@ -309,39 +338,13 @@ namespace myfoodapp.Core.Business
 
                         if (userSettings.connectivityType == ConnectivityType.Wifi && NetworkInterface.GetIsNetworkAvailable())
                         {
-                            using (var client = new HttpClient())
+                            Task.Run(async () =>
                             {
-                                var request = new Message()
-                                {
-                                    content = sigFoxSignature.ToString(),
-                                    device = userSettings.productionSiteId,
-                                    date = DateTime.Now.ToString(),
-                                };
-
-                                var taskWeb = Task.Run(async () =>
-                                {
-                                    try
-                                    {
-                                       var response = await client.PostAsync(userSettings.hubMessageAPI,
-                                       new StringContent(JsonSerializer.Serialize(request),
-                                       Encoding.UTF8, "application/json"));
-
-                                        if (response.IsSuccessStatusCode)
-                                        {
-                                            lg.AppendLog(Log.CreateLog("Measures sent to Azure via Internet", LogType.Information));
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        lg.AppendLog(Log.CreateErrorLog("Exception on Measures to Azure", ex));
-                                    }
-                                });
-
-                                taskWeb.Wait();           
-                            }
-                        }
-
-                        bw.ReportProgress(33);         
+                                await HttpClientHelper.SendMessage(userSettings.hubMessageAPI, 
+                                                                    messageSignature.ToString(), 
+                                                                    userSettings.productionSiteId);
+                            }).Wait();                                       
+                        }       
                     }
                 }
                 catch (Exception ex)
