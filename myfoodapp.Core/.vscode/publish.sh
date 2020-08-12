@@ -1,1 +1,1 @@
-sshpass -p raspberry rsync -rvuz /mnt/c/Users/mgand/source/repos/myfood/myfoodapp.Core/bin/linux-arm/publish/ pi@192.168.1.30:share/myfoodapp.Core/
+sshpass -p raspberry rsync -rvuz /mnt/c/Users/mgand/source/repos/myfood/myfoodapp.Core/bin/linux-arm/publish/ pi@192.168.137.1:share/myfoodapp.Core/

@@ -61,6 +61,10 @@
             <h1>Admin Console</h1>
 
             <RadzenButton Click="@((args) => SetPHCalibrationClick(args))" Text="Set PH Calibration to 7" style="width:100%; margin:40px"/>
+            
+            <RadzenButton Click="@((args) => ResetCalibrationClick(args))" Text="Reset to Factory Settings" style="width:100%; margin:40px"/>
+
+            <RadzenButton Click="@((args) => ClearDataSettingsClick(args))" Text="Clear Data, Settings and Reboot" style="width:100%; margin:40px"/>
         </div>
     </div>
 </div>
@@ -173,17 +177,14 @@
         logModel.AppendLog(Log.CreateLog("Set pH to 7 started", LogType.Information));
 
         var mesureBackgroundTask = MeasureBackgroundTask.GetInstance;
-        mesureBackgroundTask.Completed += SetPhAtSevenBackgroundTask_Completed;
-        mesureBackgroundTask.Stop();
 
-        StateHasChanged();
-    }
+        EventHandler handler = null;
 
-    private void SetPhAtSevenBackgroundTask_Completed(object sender, EventArgs e)
+        handler = (sender, eventArgs) =>
         {
             var lg = LogManager.GetInstance;
             var mesureBackgroundTask = MeasureBackgroundTask.GetInstance;
-            mesureBackgroundTask.Completed -= SetPhAtSevenBackgroundTask_Completed;
+            mesureBackgroundTask.Completed -= handler;
 
             try
             {
@@ -198,5 +199,88 @@
             {
                 lg.AppendLog(Log.CreateLog("Set PH to 7 ended", LogType.Information));
             }
-        }
+        };
+
+        mesureBackgroundTask.Completed += handler;
+        mesureBackgroundTask.Stop();
+
+        StateHasChanged();
+    }
+
+    void ResetCalibrationClick(MouseEventArgs args)
+    {
+        var logModel = LogManager.GetInstance;
+        logModel.AppendLog(Log.CreateLog("Reset Calibration started", LogType.Information));
+
+        var mesureBackgroundTask = MeasureBackgroundTask.GetInstance;
+
+        EventHandler handler = null;
+
+        handler = (sender, eventArgs) =>
+        {
+            var lg = LogManager.GetInstance;
+            var mesureBackgroundTask = MeasureBackgroundTask.GetInstance;
+            mesureBackgroundTask.Completed -= handler;
+
+            try
+            {
+                AtlasSensorManager.GetInstance.ResetSensorsToFactory();
+                mesureBackgroundTask.Run();
+            }
+            catch (Exception ex)
+            {
+                lg.AppendLog(Log.CreateErrorLog("Exception Reset Calibration", ex));
+            }
+            finally
+            {
+                lg.AppendLog(Log.CreateLog("Reset Calibration ended", LogType.Information));
+            }
+        };
+
+        mesureBackgroundTask.Completed += handler;
+        mesureBackgroundTask.Stop();
+
+        StateHasChanged();
+    }
+
+    void ClearDataSettingsClick(MouseEventArgs args)
+    {
+        var logModel = LogManager.GetInstance;
+        logModel.AppendLog(Log.CreateLog("Clear Data and Settings started", LogType.Information));
+
+        var mesureBackgroundTask = MeasureBackgroundTask.GetInstance;
+
+        EventHandler handler = null;
+
+        handler = (sender, eventArgs) =>
+        {
+            var lg = LogManager.GetInstance;
+            var mesureBackgroundTask = MeasureBackgroundTask.GetInstance;
+            mesureBackgroundTask.Completed -= handler;
+
+            try
+            {
+                var strDb0 = "sudo rm /home/pi/share/myfoodapp.Core/myfood.db".Bash();
+                var strDb1 = "sudo rm /home/pi/share/myfoodapp.Core/myfood.db-shm".Bash();
+                var strDb2 = "sudo rm /home/pi/share/myfoodapp.Core/myfood.db-wal".Bash();
+                var strLogs = "sudo rm /home/pi/share/myfoodapp.Core/user.json".Bash();
+                var strSettings = "sudo rm -rf /home/pi/share/myfoodapp.Core/Logs".Bash();
+                var strRestartApp = "sudo shutdown -h now".Bash();
+            }
+            catch (Exception ex)
+            {
+                lg.AppendLog(Log.CreateErrorLog("Exception on Clear Data and Settings", ex));
+            }
+            finally
+            {
+                lg.AppendLog(Log.CreateLog("Clear Data and Settings ended", LogType.Information));
+            }
+        };
+
+        mesureBackgroundTask.Completed += handler;
+        mesureBackgroundTask.Stop();
+
+        StateHasChanged();
+    }
+
 }

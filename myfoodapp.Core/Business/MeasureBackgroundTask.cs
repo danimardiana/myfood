@@ -91,56 +91,71 @@ namespace myfoodapp.Core.Business
 
             var captureDateTime = DateTime.Now;
 
-            if (clockManager != null)
+            try
             {
-                Task.Run(async() => 
+                sigfoxManager = SigfoxInterfaceManager.GetInstance;
+
+                if(userSettings.connectivityType == ConnectivityType.Sigfox)
                 {
-                    clockManager.InitClock();
-                    await Task.Delay(2000);
-                    captureDateTime = clockManager.ReadDate();
-                    clockManager.Dispose();
-                }).Wait();               
+                    sigfoxManager.InitInterface();
+                    sigfoxManager.SendMessage(messageSignature.ToString(), userSettings.sigfoxVersion);
+                }
+
+                if (userSettings.connectivityType == ConnectivityType.Wifi && NetworkInterface.GetIsNetworkAvailable())
+                {
+                    Task.Run(async () =>
+                    {
+                        await HttpClientHelper.SendMessage(userSettings.hubMessageAPI, 
+                                                            messageSignature.ToString(), 
+                                                            userSettings.productionSiteId);
+                    }).Wait();                                       
+                } 
+            }
+            catch (Exception ex)
+            {
+                lg.AppendLog(Log.CreateErrorLog("Exception on Connectivity Init", ex));
             }
 
-            userSettings = userSettingsManager.GetUserSettings();
-
-            sigfoxManager = SigfoxInterfaceManager.GetInstance;
-
-            if(userSettings.connectivityType == ConnectivityType.Sigfox)
+            try
             {
-                sigfoxManager.InitInterface();
-                sigfoxManager.SendMessage(messageSignature.ToString(), userSettings.sigfoxVersion);
-            }
-
-            if (userSettings.connectivityType == ConnectivityType.Wifi && NetworkInterface.GetIsNetworkAvailable())
-            {
-                Task.Run(async () =>
+                if (clockManager != null)
                 {
-                    await HttpClientHelper.SendMessage(userSettings.hubMessageAPI, 
-                                                        messageSignature.ToString(), 
-                                                        userSettings.productionSiteId);
-                }).Wait();                                       
-            }  
+                    Task.Run(async() => 
+                    {
+                        clockManager.InitClock();
+                        await Task.Delay(2000);
+                        captureDateTime = clockManager.ReadDate();
+                        clockManager.Dispose();
+                    }).Wait();               
+                }
 
-            if (userSettings.isDiagnosticModeEnable)
-            {
-                TICKSPERCYCLE = TICKSPERCYCLE_DIAGNOSTIC_MODE;
-            }           
+                userSettings = userSettingsManager.GetUserSettings(); 
+
+                if (userSettings.isDiagnosticModeEnable)
+                {
+                    TICKSPERCYCLE = TICKSPERCYCLE_DIAGNOSTIC_MODE;
+                }           
+                    
+                sensorManager = AtlasSensorManager.GetInstance;
+
+                sensorManager.InitSensors(userSettings.isSleepModeEnable);
+
+                sensorManager.SetDebugLedMode(userSettings.isDebugLedEnable);
+
+                humTempManager = HumidityTemperatureManager.GetInstance;
+
+                internalTemperatureManager = InternalTemperatureManager.GetInstance;
                 
-            sensorManager = AtlasSensorManager.GetInstance;
+                if (userSettings.isTempHumiditySensorEnable)
+                {
+                    humTempManager.Connect();
+                }
 
-            sensorManager.InitSensors(userSettings.isSleepModeEnable);
-
-            sensorManager.SetDebugLedMode(userSettings.isDebugLedEnable);
-
-            humTempManager = HumidityTemperatureManager.GetInstance;
-
-            internalTemperatureManager = InternalTemperatureManager.GetInstance;
-            
-
-            if (userSettings.isTempHumiditySensorEnable)
+            }
+            catch (Exception ex)
             {
-                humTempManager.Connect();
+                lg.AppendLog(Log.CreateErrorLog("Exception on Init Hardware", ex));
+                sigfoxManager.SendMessage("FFFFFFFFFFFFFFFFFFFFFFFF", userSettings.sigfoxVersion);
             }
 
             while (!bw.CancellationPending)
@@ -341,8 +356,8 @@ namespace myfoodapp.Core.Business
                             Task.Run(async () =>
                             {
                                 await HttpClientHelper.SendMessage(userSettings.hubMessageAPI, 
-                                                                    messageSignature.ToString(), 
-                                                                    userSettings.productionSiteId);
+                                                                   messageSignature.ToString(), 
+                                                                   userSettings.productionSiteId);
                             }).Wait();                                       
                         }       
                     }

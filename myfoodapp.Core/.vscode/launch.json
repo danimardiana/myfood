@@ -50,7 +50,7 @@
                 "pipeArgs": [
                     "-pw",
                     "raspberry",
-                    "pi@192.168.1.30"
+                    "pi@192.168.137.1"
                 ],
                 "debuggerPath": "/home/pi/vsdbg/vsdbg"
             }
